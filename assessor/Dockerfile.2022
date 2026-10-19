@@ -1,0 +1,32 @@
+# The Cook County Assessor's 2022 residential model environment, rebuilt from the tag 2022-assessment-year of
+# https://github.com/ccao-data/model-res-avm (commit 7b026b20f10f91db7cbded92528512b1de89df9f), following the tag's
+# own CI recipe (.gitlab-ci.yml: image rocker/r-ver:4.1.2, its system packages, RENV_CONFIG_REPOS_OVERRIDE,
+# renv::restore()). context/ is the tag's checkout without .git: their code, params.yaml and renv.lock unchanged.
+# Departures from the CI recipe, all operational:
+#  - the base image is pinned by digest (the digest current on 2026-10-18; Ubuntu 20.04 focal, R 4.1.2 as in their
+#    CI image; their lockfile records R 4.1.3);
+#  - R packages come as precompiled binaries from Posit Package Manager's focal snapshot of 2022-04-01 instead of
+#    source from cloud.r-project.org; renv installs the lockfile's exact versions (13 of them from the snapshot's
+#    archive). The snapshot first tried, 2022-03-15, cannot supply eight locked versions that are newer than it.
+#    The Assessor's own three packages come from their pinned GitLab commits;
+#  - no dvc install and no `dvc pull`: the inputs are mounted at run time (rebuild.sh);
+#  - the renv library lives inside the image; MAKEFLAGS=-j8 only speeds up compilation.
+# Built and run by rebuild.sh in this folder.
+FROM rocker/r-ver:4.1.2@sha256:6ae57bef96a03da4ce94c16d30458166213ec8423dd2eb820de7c818f9f825b1
+
+ENV RENV_CONFIG_REPOS_OVERRIDE="https://p3m.dev/cran/__linux__/focal/2022-04-01" \
+    RENV_PATHS_CACHE=/opt/renv/cache \
+    RENV_PATHS_LIBRARY=/model-res-avm/renv/library \
+    MAKEFLAGS=-j8
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+      libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev git libudunits2-dev python3-dev python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /model-res-avm
+# Lockfile and renv bootstrap first, so the long restore is its own cached layer.
+COPY context/renv.lock context/.Rprofile context/.Renviron ./
+COPY context/renv/activate.R context/renv/settings.dcf renv/
+RUN Rscript -e 'renv::restore()' && Rscript -e 'renv::status()' \
+    && Rscript -e 'ip <- installed.packages(); write.csv(ip[, c("Package","Version","Built","LibPath")], "/opt/renv_installed.csv", row.names = FALSE)'
+COPY context/ ./

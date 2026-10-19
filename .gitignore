@@ -1,0 +1,6 @@
+# Prepared data, fits and results are written here and are not part of the repository.
+data/
+runs/
+__pycache__/
+# CmdStan builds the model executable beside the .stan file.
+stan/v2/gl_struct

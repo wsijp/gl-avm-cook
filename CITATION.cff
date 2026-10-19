@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: >-
+  If you use this code, please cite the repository. For the model itself, please cite
+  Sijp and Francke (2026), Real Estate Economics (the preferred citation below).
+title: "gl-avm-cook: valuing Cook County homes with a spatio-temporal hedonic model, compared with the Assessor's own model"
+repository-code: "https://github.com/wsijp/gl-avm-cook"
+type: software
+authors:
+  - family-names: Sijp
+    given-names: Willem
+    orcid: "https://orcid.org/0000-0002-5971-3860"
+license: MIT
+version: "1.0"
+date-released: "2026-10-20"
+references:
+  - type: report
+    title: "Scale and Local Information in Housing Markets: A Graph-Laplacian AVM Benchmarked Against Machine Learning"
+    authors:
+      - family-names: Sijp
+        given-names: Willem
+    institution:
+      name: SSRN
+    year: 2026
+    doi: 10.2139/ssrn.7345003
+    url: "https://papers.ssrn.com/abstract=7345003"
+preferred-citation:
+  type: article
+  title: "Graph-Laplacian modeling of spatiotemporal effects for house price estimation"
+  authors:
+    - family-names: Sijp
+      given-names: Willem P.
+    - family-names: Francke
+      given-names: Marc K.
+  journal: Real Estate Economics
+  year: 2026
+  doi: 10.1111/1540-6229.70062
+  url: "https://doi.org/10.1111/1540-6229.70062"

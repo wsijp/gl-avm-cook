@@ -1,10 +1,10 @@
 # An open house valuation model, validated on Cook County IL
 
-This repository contains the code of the **GL model**, an open Bayesian house valuation model, and a test of it as an assessment model in part of Cook County, Illinois (which contains Chicago). The test values every eligible home (single-family houses, two- to six-flat buildings and town houses) at 1 January, as an assessor must, and compares those values with the Cook County Assessor’s own model on the sales that followed.
+This repository contains the code of the **GL model**, an open Bayesian house valuation model, and a test of it as an assessment model on part of Cook County, Illinois.
 
-![Location effect per census block in the 30 townships studied](figures/location_map.png)
+![Value of a standard home per census block in the 30 townships studied](figures/location_map.png)
 
-*The model’s location effect for each census block in the 30 suburban townships studied (north, valued for 2022; south and west, valued for 2023): the price of a home there relative to its township’s level, other things equal. Blank: blocks without valued homes; grey: Chicago, not covered. Lines: township boundaries; the rectangle marks the zoom on Evanston (right).*
+*The model’s value of one standard home, the same everywhere, in each census block of the 30 suburban townships studied, relative to the median block; the north is valued at 1 January 2022, the south and west at 1 January 2023. Colour steps at neighbourhood boundaries mostly match nearby sales; some at township lines, where separately fitted townships meet, do not. Blank: blocks without valued homes; grey: Chicago, not covered. Lines: township boundaries; the rectangle marks the zoom on Evanston (right).*
 
 *Status: first public release; results are preliminary.*
 
@@ -45,7 +45,7 @@ No data are included. The scripts download public inputs and create `data/` and 
 
 ## Part 2: comparison with the Assessor’s model
 
-An assessor must value every home on the roll at a fixed date, 1 January in Cook County, before the year’s sales are known. The Cook County Assessor publishes the code and data of its own valuation model, which makes it the natural benchmark. We value the same homes at the same date, from the same published training data, and check both models against sales later in the year. Our benchmark is our rebuild of the Assessor’s model from that public code and data; we also show the values the Assessor published.
+An assessor must value every home on the roll at a fixed date, 1 January in Cook County, before the year’s sales are known. The Cook County Assessor publishes the code and data of its own valuation model, which makes it the natural benchmark. We value the same homes (single-family houses, two- to six-flat buildings and town houses) at the same date, from the same published training data, and check both models against sales later in the year. Our benchmark is our rebuild of the Assessor’s model from that public code and data; we also show the values the Assessor published.
 
 **The GL values are more accurate than our rebuild of the Assessor’s model in both years.** Their typical error (MdAPE) is about one percentage point lower: 14.60% against 15.67% in 2023 (difference −1.07 points, 90% interval −1.34 to −0.78) and 9.52% against 10.39% in 2022 (−0.87, −1.06 to −0.69).
 
@@ -132,7 +132,9 @@ Each effect has a whitened graph-Laplacian prior, as in Sijp and Francke (2026).
 - $\psi = \sigma_\psi A_K Z_\psi A_T^\top$ with independent standard-normal entries in $Z_\psi$, so $\mathrm{vec}(\psi)$ has prior covariance $\sigma_\psi^2 (L_T^+ \otimes L_K^+)$: each neighbourhood’s price path is a random walk, smoothed across neighbouring neighbourhoods.
 - $u = \sigma_u A_u z_u$ with one graph per neighbourhood, so block effects sum to zero within each neighbourhood. Each neighbourhood’s whitener is scaled to unit geometric-mean marginal variance. Blocks without training sales are estimated jointly with the rest, through their neighbours in this prior.
 
-The map at the top shows $\exp(m) - 1$, with $m$ the posterior median of $\zeta_k + u_s$: the price relative to the model’s township baseline, before the monthly and neighbourhood price paths. Equal colours in different townships therefore do not mean equal prices. Where a census block is split between neighbourhoods, the map shows the mean of its parts weighted by their numbers of homes.
+The map at the top shows, for each census block, the 1 January log value of one standard home, $m = \alpha + x_\ast^\top \beta + \mu_T + \zeta_k + \psi_{kT} + u_s$ (posterior median), as $\exp(m - \tilde m) - 1$, with $\tilde m$ the median over the blocks shown and $T$ the last training month. The standard home $x_\ast$ has the median of each numerical characteristic and the most common level of each categorical one over all 30 townships’ training sales (57 years old, about 1,460 square feet of building on 7,400 of land, three bedrooms), coded as in each township. Colours are therefore comparable across townships, though the two areas are valued a year apart. Where a census block is split between neighbourhoods, the map shows the mean of its parts weighted by their numbers of homes.
+
+We checked the map’s steps at neighbourhood boundaries against sales within 400 m on either side, adjusted for characteristics and sale month by a simple regression (sales of the last three training years). Within townships the map’s steps track the sales’ (correlation 0.79 over 750 boundaries); across township lines, where separately fitted townships meet, less closely (0.64 over 104 boundaries, with the map’s step outside the sales’ 90% interval at 28% of them, against 12% within townships). The check’s script is not included in this release.
 
 Blocks crossing Assessor neighbourhood boundaries are split. Blocks within a neighbourhood are connected when they share a boundary line, and neighbourhoods are connected when their blocks share one. Disconnected parts are joined by a minimum spanning tree using distances between block outlines.
 

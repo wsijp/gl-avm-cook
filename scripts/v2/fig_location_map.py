@@ -1,12 +1,14 @@
-"""The README's map (public/figures/location_map.png): the GL model's location effect per census block in the 30 fitted
-townships of Cook County, over an OpenStreetMap basemap, with a zoom on one township.
+"""The README's map (public/figures/location_map.png): the GL model's 1 January value of one standard home in every
+census block of the 30 fitted townships of Cook County, over an OpenStreetMap basemap, with a zoom on one township.
 
-Location effect of a block = posterior median, over the 4,000 draws of the published model P, of the neighbourhood
-effect plus the block's own effect (zeta[k] + u[s] in stan/v2/gl_struct.stan), shown as exp(effect) - 1 in % of price
-relative to the township's level (the neighbourhood effects sum to zero over the township's neighbourhoods; the block
-effects sum to zero within each neighbourhood). Blocks without eligible homes are left blank. A block that straddles
-two Assessor neighbourhoods is one unit per neighbourhood in the model; the map shows their mean weighted by homes.
-The Chicago outline is the Assessor's eight City townships (70-77).
+Value of a block = posterior median, over the 4,000 draws of the published model P, of the log value at the valuation
+date (1 January 2023 or 2022) of the same standard home everywhere: intercept + mu[last training month] + zeta[k] +
+psi[k, last month] + u[s] + (x_std - training mean)' beta (stan/v2/gl_struct.stan; value_v2.py's formula). x_std is
+the median of each numeric characteristic and the most common level of each categorical one over the training sales of
+all 30 townships, coded with each township's own coding. Shown as exp(difference) - 1 in % from the median block shown,
+on one colour scale for the whole county, so colours compare across township lines. Blocks without eligible homes are
+left blank. A block that straddles two Assessor neighbourhoods is one unit per neighbourhood in the model; the map
+shows their mean weighted by homes. The Chicago outline is the Assessor's eight City townships (70-77).
 
 Inputs: public/runs/v2/struct_eval/runs.json (the published runs, model P), each run's draws.npz and design.npz, the
 prepared units (public/data/v2/prep_*/t<code>/units.parquet), the census-block units of each year
@@ -47,40 +49,110 @@ NAMES = {"10": "Barrington", "11": "Berwyn", "12": "Bloom", "13": "Bremen", "14"
          "27": "Oak Park", "28": "Orland", "29": "Palatine", "30": "Palos", "31": "Proviso", "32": "Rich",
          "33": "River Forest", "34": "Riverside", "35": "Schaumburg", "36": "Stickney", "37": "Thornton",
          "38": "Wheeling", "39": "Worth"}
+CAT_COLS = ["char_air", "char_apts", "char_attic_fnsh", "char_attic_type", "char_bsmt", "char_bsmt_fin",
+            "char_ext_wall", "char_gar1_area", "char_gar1_att", "char_gar1_cnst", "char_gar1_size", "char_heat",
+            "char_porch", "char_roof_cnst", "char_tp_dsgn", "char_tp_plan", "char_type_resd"]   # prep_v2.CAT
 CITY = {str(t) for t in range(70, 78)}
-# blue (below the township's level) to red (above it) through a neutral grey
+# blue (below the median block) to red (above it) through a neutral grey
 CMAP = LinearSegmentedColormap.from_list("div", ["#1f4e9c", "#6fa0dc", "#f0efec", "#e98a6b", "#b2241b"])
-LIMIT = 0.5                                       # colour scale +-0.5 log points (-39% to +65%); beyond is saturated
-TICKS = [-35, -20, 0, 25, 50]                 # % of price
+LIMIT = 0.75                                      # colour scale +-0.75 log points (-53% to +112%), about the 95th
+TICKS = [-50, -25, 0, 50, 100]                    # percentile of |difference|; beyond is saturated. % of price
 
 
-def block_effects():
-    """one row per census block: location effect in log points; and the set of fitted townships"""
-    runs = json.loads((REPO / "public/runs/v2/struct_eval/runs.json").read_text())
+def decode(t, coding):
+    """characteristics back from one township's coded regressors: numerics on their raw scale (missing values were
+    filled with the training median), categoricals as levels ("other" pools the township's rare levels); characteristics
+    the township's coding dropped are absent"""
+    x = pd.DataFrame(index=t.index)
+    for c, p in coding["numeric"].items():
+        if f"x:{c}" in t:
+            x[c] = t[f"x:{c}"] * p["sd"] + p["mean"]
+    if "x:char_recent_renovation" in t:
+        x["char_recent_renovation"] = t["x:char_recent_renovation"]
+    for c, p in coding["categorical"].items():
+        s = pd.Series(p["reference"], index=t.index)
+        for lev in p["levels"]:
+            if f"x:{c}={lev}" in t:
+                s[t[f"x:{c}={lev}"] == 1] = lev
+        x[c] = s
+    return x
+
+
+def standard_home(runs):
+    """the standard home: medians of the numeric characteristics and the most common level of each categorical one,
+    over the training sales of all the fitted townships (decoded from each township's coded regressors)"""
+    xs = []
+    for r in runs:
+        prep = REPO / r["prep"] / f"t{r['town']}"
+        xs.append(decode(pd.read_parquet(prep / "train.parquet"), json.loads((prep / "coding.json").read_text())))
+    x = pd.concat(xs)
+    num = [c for c in x.columns if c not in CAT_COLS]
+    return ({c: float(x[c].median()) for c in num},
+            {c: x.loc[x[c] != "other", c].value_counts().index[0] for c in CAT_COLS})   # "other" differs by township
+
+
+def encode(home, coding, xcols):
+    """the standard home in one township's coded regressors (prep_v2.apply_coding's rules)"""
+    num, cat = home
+    x = {}
+    for c, p in coding["numeric"].items():
+        x[f"x:{c}"] = (num[c] - p["mean"]) / p["sd"] if p["sd"] > 0 else 0.0
+    x["x:char_recent_renovation"] = num.get("char_recent_renovation", 0.0)
+    for c, p in coding["categorical"].items():
+        lev = "other" if cat[c] in p["merged_into_other"] else cat[c]
+        if lev not in p["levels"]:
+            lev = "other" if "other" in p["levels"] else p["reference"]
+        for l in p["levels"]:
+            if l != p["reference"]:
+                x[f"x:{c}={l}"] = float(lev == l)
+    return np.array([x[c] for c in xcols])
+
+
+def unit_values(r, home):
+    """one fit's units (spatial nodes) with the posterior median 1 January log value of the standard home there"""
+    prep = REPO / r["prep"] / f"t{r['town']}"
+    d = np.load(REPO / r["run"] / "draws.npz")
+    design = np.load(REPO / r["run"] / "design.npz")
+    nbhds, xcols = list(design["nbhds"]), list(design["xcols"])
+    units = pd.read_parquet(prep / "units.parquet")
+    assert (units["node"].to_numpy() == np.arange(len(units))).all() and d["u"].shape[1] == len(units)
+    xmean = pd.read_parquet(prep / "train.parquet", columns=xcols).mean().to_numpy()   # design.npz's X_c centring
+    x_std = encode(home, json.loads((prep / "coding.json").read_text()), xcols) - xmean
+    k = units["nbhd_id"].map({n: i for i, n in enumerate(nbhds)}).to_numpy()
+    common = d["intercept"] + d["mu"][:, -1] + d["beta"] @ x_std
+    return units.assign(value=np.median(common[:, None] + d["zeta"][:, k] + d["psi_last"][:, k] + d["u"], axis=0))
+
+
+def published_runs():
+    return [r for r in json.loads((REPO / "public/runs/v2/struct_eval/runs.json").read_text()).values()
+            if r["model"] == "P"]
+
+
+def block_values():
+    """one row per census block: the model's 1 January log value of the standard home there (posterior median of
+    intercept + mu[last month] + zeta[k] + psi[k, last month] + u[s] + (x_std - training mean)' beta); the fitted
+    townships; their years; the standard home"""
+    runs = published_runs()
+    home = standard_home(runs)
     out = []
-    for key, r in sorted(runs.items()):
-        if r["model"] != "P":
-            continue
+    for r in sorted(runs, key=lambda r: (r["year"], r["town"])):
         year, town = r["year"], r["town"]
-        d = np.load(REPO / r["run"] / "draws.npz")
-        nbhds = list(np.load(REPO / r["run"] / "design.npz")["nbhds"])
-        units = pd.read_parquet(REPO / r["prep"] / f"t{town}" / "units.parquet")
-        assert (units["node"].to_numpy() == np.arange(len(units))).all() and d["u"].shape[1] == len(units)
-        k = units["nbhd_id"].map({n: i for i, n in enumerate(nbhds)}).to_numpy()
-        eff = np.median(d["zeta"][:, k] + d["u"], axis=0)
-        u = units.assign(effect=eff)[~units["pass_through"]]
+        units = unit_values(r, home)
+        u = units[~units["pass_through"]]
         geoid = pd.read_parquet(UNITS[year], columns=["unit_idx", "block_geoid"]).set_index("unit_idx")["block_geoid"]
         u = u.assign(block_geoid=u["unit_idx"].map(geoid), year=year, town=town)
         assert u["block_geoid"].notna().all()
-        out.append(u[["year", "town", "block_geoid", "effect", "n_supported"]])
+        out.append(u[["year", "town", "block_geoid", "value", "n_supported"]])
     e = pd.concat(out)
     w = e["n_supported"].clip(lower=1)
     towns = set(e["town"])
-    # 12 blocks straddle two fitted townships of the same year: their units are averaged in the same way
-    e = e.assign(wx=e["effect"] * w, w=w).groupby(["year", "block_geoid"], as_index=False)[["wx", "w"]].sum()
-    e["effect"] = e["wx"] / e["w"]
+    # a block split between two neighbourhoods (or, for 12 blocks, two fitted townships of the same year) is one unit
+    # per part in the model: the map shows their mean weighted by homes
+    e = e.assign(wx=e["value"] * w, w=w).groupby(["year", "block_geoid"], as_index=False)[["wx", "w"]].sum()
+    e["value"] = e["wx"] / e["w"]
     assert e["block_geoid"].is_unique, "a block in both years"
-    return e[["block_geoid", "effect"]], towns, {r["town"]: r["year"] for r in runs.values()}
+    e["effect"] = e["value"] - e["value"].median()             # log difference from the median block shown
+    return e[["block_geoid", "value", "effect"]], towns, {r["town"]: r["year"] for r in runs}, home
 
 
 def tile(z, x, y):
@@ -137,7 +209,8 @@ def main():
     ap.add_argument("--out", default="public/figures/location_map.png")
     a = ap.parse_args()
 
-    e, fitted_towns, year_of = block_effects()
+    e, fitted_towns, year_of, home = block_values()
+    print("standard home:", home)
     blk = gpd.read_file(f"zip://{TIGER}", where="COUNTYFP20 = '031'", engine="pyogrio",
                         columns=["COUNTYFP20", "GEOID20", "ALAND20"]).to_crs(3857)
     towns_of = pd.read_parquet(UNITS["2023"], columns=["block_geoid", "town"]).drop_duplicates("block_geoid")
@@ -207,7 +280,7 @@ def main():
     cb.set_ticks([math.log1p(t / 100) for t in TICKS], labels=[f"{t:+d}%" if t else "0" for t in TICKS])
     cb.outline.set_visible(False)
     cb.ax.tick_params(labelsize=12, length=3, color=INK2)
-    cb.set_label("Location effect: price relative to the township's level", fontsize=13, labelpad=8)
+    cb.set_label("Value of one standard home at 1 January,\nrelative to the median block", fontsize=13, labelpad=8)
     cb.ax.xaxis.set_label_position("top")
     fig.text(0.995, 0.005, "Map data © OpenStreetMap contributors (ODbL)", fontsize=10, color=INK2, ha="right")
     out = REPO / a.out

@@ -99,8 +99,10 @@ and the Assessor's 2022 training filter):
 Step 6 in detail: `struct_chosen.py --model P` (the headline measures, calling `ratio_v2.py`, which computes every
 measure and interval), `struct_convergence.py`, `d38_level.py` and `d38_unadjusted.py` (the correction made in advance,
 with and without time adjustment), `equity_eval.py` and `equity_figure.py` (the published values, PRD and PRB, the
-decile figure), `readme_figures.py`, `readme_numbers.py` and `fig_location_map.py` (the map; it downloads about 70
-OpenStreetMap tiles once, into `public/data/v2/osm_tiles/`).
+decile figure), `readme_figures.py`, `readme_numbers.py` and `fig_location_map.py --set assessment` (the map of the 1 January fits,
+`figures/location_map_assessment.png`; it downloads about 70 OpenStreetMap tiles once, into
+`public/data/v2/osm_tiles/`). The README's sale-prediction test, its by-township figure and the whole-county map at
+the top (`fig_location_map.py --set county2025`) come from fits whose scripts are not yet in this release.
 
 ## Where each published number is written
 All under `public/runs/v2/`:

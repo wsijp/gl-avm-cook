@@ -103,7 +103,7 @@ step_evaluate() {
   run $PY -I $S/equity_figure.py --structure
   cp notes/v2/figures/structure_equity_deciles.png public/figures/price_deciles.png
   run $PY -I $S/readme_figures.py --structure # public/figures/
-  run $PY -I $S/fig_location_map.py          # the map (downloads OpenStreetMap tiles once)
+  run $PY -I $S/fig_location_map.py --set assessment   # the 1 January map (downloads OpenStreetMap tiles once)
   run $PY -I $S/readme_numbers.py
 }
 

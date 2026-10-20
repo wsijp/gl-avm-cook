@@ -1,6 +1,6 @@
 # An open house valuation model, validated on Cook County IL
 
-This repository contains the code of the **GL model**, an open Bayesian house valuation model, and a test of it as an assessment model on part of Cook County, Illinois.
+This repository contains the code of the **GL model**, an open Bayesian house valuation model, and a comparison of it with the Cook County Assessor’s own valuation model on part of Cook County, Illinois.
 
 ![Value of a standard home per census block in the 30 townships studied](figures/location_map.png)
 
@@ -16,7 +16,7 @@ The model code can be used as a house valuation model more generally, fitted to 
 
 ### Getting started
 
-[REPRODUCE.md](REPRODUCE.md) lists the prerequisites, the commands for each stage, their runtimes and where every result is written. The Assessor’s model runs in Docker; read REPRODUCE.md’s memory instructions for it before running `all`. The scripts expect this repository to be in a subfolder named `public` inside a working folder:
+The repository runs two models on the same public data: the GL model, whose code is here, and, for comparison, the Cook County Assessor’s own valuation model. The Assessor publishes that model’s code ([ccao-data/model-res-avm](https://github.com/ccao-data/model-res-avm)) but not its fitted runs, so the scripts here rebuild it from their code and public inputs for each year, run it unchanged in Docker, and do not redistribute it; the rebuild reproduces about three quarters of the Assessor’s published values exactly. [REPRODUCE.md](REPRODUCE.md) lists the prerequisites, the commands for each stage (including the Docker memory setting for the Assessor’s model), their runtimes and where every result is written. The scripts expect this repository to be in a subfolder named `public` inside a working folder:
 
 ```bash
 mkdir work && cd work

@@ -1,23 +1,28 @@
-"""The README's map (public/figures/location_map.png): the GL model's 1 January value of one standard home in every
-census block of the 30 fitted townships of Cook County, over an OpenStreetMap basemap, with a zoom on one township.
+"""The README's maps: the GL model's value of one standard home in every census block, over an OpenStreetMap basemap,
+with a zoom on one township. Two sets of fits:
+  --set county2025 (public/figures/location_map.png): the whole-county fits of all 38 townships, Chicago included,
+    on the Assessor's 2025 training sales, valued at October 2023 (their last training month);
+  --set assessment (public/figures/location_map_assessment.png): the 1 January fits of the 30 suburban townships
+    (north 2022, south and west 2023).
 
-Value of a block = posterior median, over the 4,000 draws of the published model P, of the log value at the valuation
-date (1 January 2023 or 2022) of the same standard home everywhere: intercept + mu[last training month] + zeta[k] +
-psi[k, last month] + u[s] + (x_std - training mean)' beta (stan/v2/gl_struct.stan; value_v2.py's formula). x_std is
-the median of each numeric characteristic and the most common level of each categorical one over the training sales of
-all 30 townships, coded with each township's own coding. Shown as exp(difference) - 1 in % from the median block shown,
-on one colour scale for the whole county, so colours compare across township lines. Blocks without eligible homes are
-left blank. A block that straddles two Assessor neighbourhoods is one unit per neighbourhood in the model; the map
-shows their mean weighted by homes. The Chicago outline is the Assessor's eight City townships (70-77).
+Value of a block = posterior median, over the 4,000 draws of the published model P, of the log value in the last
+training month of the same standard home everywhere: intercept + mu[last training month] + zeta[k] + psi[k, last
+month] + u[s] + (x_std - training mean)' beta (stan/v2/gl_struct.stan; value_v2.py's formula). x_std is the median of
+each numeric characteristic (the previous-sale count included, where it is a regressor) and the most common level of
+each categorical one over the training sales of all the set's townships, coded with each township's own coding. Shown
+as exp(difference) - 1 in % from the median block shown, on one colour scale for the whole county, so colours compare
+across township lines. Blocks without eligible homes are left blank. A block that straddles two Assessor
+neighbourhoods is one unit per neighbourhood in the model; the map shows their mean weighted by homes. The Chicago
+outline is the Assessor's eight City townships (70-77).
 
-Inputs: public/runs/v2/struct_eval/runs.json (the published runs, model P), each run's draws.npz and design.npz, the
-prepared units (public/data/v2/prep_*/t<code>/units.parquet), the census-block units of each year
+Inputs: the set's runs.json (public/runs/v2/county2025_eval/ or struct_eval/, model P), each run's draws.npz and
+design.npz, the prepared units (public/data/v2/prep_*/t<code>/units.parquet), the census-block units of each year
 (public/data/v2/blocks_2023_units.parquet, ay2022/blocks_2022_units.parquet) and the 2020 TIGER/Line block file
 (notes/v2/explore_blocks/tl_2020_17_tabblock20.zip). Basemap tiles are downloaded once from tile.openstreetmap.org
 (cached in public/data/v2/osm_tiles/); map data (c) OpenStreetMap contributors, ODbL.
 
-Usage (from the working folder): .venv/bin/python -I public/scripts/v2/fig_location_map.py [--style colour|light]
-[--zoom-town 17] [--out public/figures/location_map.png]
+Usage (from the working folder): .venv/bin/python -I public/scripts/v2/fig_location_map.py
+[--set county2025|assessment] [--style colour|light] [--zoom-town 17] [--out <png>]
 """
 import argparse
 import io
@@ -43,20 +48,20 @@ UNITS = {"2023": REPO / "public/data/v2/blocks_2023_units.parquet",
          "2022": REPO / "public/data/v2/ay2022/blocks_2022_units.parquet"}
 USER_AGENT = "gl-avm-cook-figure/1.0 (research figure; github.com/wsijp)"   # OSM's tile policy asks for one
 INK, INK2, SURFACE = "#0b0b0b", "#52514e", "#fcfcfb"
-NAMES = {"10": "Barrington", "11": "Berwyn", "12": "Bloom", "13": "Bremen", "14": "Calumet", "15": "Cicero",
+NAMES = {"70": "Hyde Park", "71": "Jefferson", "72": "Lake", "73": "Lake View", "74": "North Chicago",
+         "75": "Rogers Park", "76": "South Chicago", "77": "West Chicago", "10": "Barrington", "11": "Berwyn", "12": "Bloom", "13": "Bremen", "14": "Calumet", "15": "Cicero",
          "16": "Elk Grove", "17": "Evanston", "18": "Hanover", "19": "Lemont", "20": "Leyden", "21": "Lyons",
          "22": "Maine", "23": "New Trier", "24": "Niles", "25": "Northfield", "26": "Norwood Park",
          "27": "Oak Park", "28": "Orland", "29": "Palatine", "30": "Palos", "31": "Proviso", "32": "Rich",
          "33": "River Forest", "34": "Riverside", "35": "Schaumburg", "36": "Stickney", "37": "Thornton",
          "38": "Wheeling", "39": "Worth"}
-CAT_COLS = ["char_air", "char_apts", "char_attic_fnsh", "char_attic_type", "char_bsmt", "char_bsmt_fin",
-            "char_ext_wall", "char_gar1_area", "char_gar1_att", "char_gar1_cnst", "char_gar1_size", "char_heat",
-            "char_porch", "char_roof_cnst", "char_tp_dsgn", "char_tp_plan", "char_type_resd"]   # prep_v2.CAT
 CITY = {str(t) for t in range(70, 78)}
 # blue (below the median block) to red (above it) through a neutral grey
 CMAP = LinearSegmentedColormap.from_list("div", ["#1f4e9c", "#6fa0dc", "#f0efec", "#e98a6b", "#b2241b"])
-LIMIT = 0.75                                      # colour scale +-0.75 log points (-53% to +112%), about the 95th
-TICKS = [-50, -25, 0, 50, 100]                    # percentile of |difference|; beyond is saturated. % of price
+# colour scale in log points, about the 95th (assessment: +-0.75, -53% to +112%) or 97th (county: +-1.0, -63% to
+# +172%) percentile of |difference|; beyond is saturated. Ticks in % of price
+LIMIT = {"assessment": 0.75, "county2025": 1.0}
+TICKS = {"assessment": [-50, -25, 0, 50, 100], "county2025": [-50, -25, 0, 50, 100]}
 
 
 def decode(t, coding):
@@ -86,9 +91,11 @@ def standard_home(runs):
         prep = REPO / r["prep"] / f"t{r['town']}"
         xs.append(decode(pd.read_parquet(prep / "train.parquet"), json.loads((prep / "coding.json").read_text())))
     x = pd.concat(xs)
-    num = [c for c in x.columns if c not in CAT_COLS]
+    cat = sorted({c for r in runs for c in json.loads((REPO / r["prep"] / f"t{r['town']}" / "coding.json").read_text())
+                  ["categorical"]})
+    num = [c for c in x.columns if c not in cat]
     return ({c: float(x[c].median()) for c in num},
-            {c: x.loc[x[c] != "other", c].value_counts().index[0] for c in CAT_COLS})   # "other" differs by township
+            {c: x.loc[x[c] != "other", c].value_counts().index[0] for c in cat})   # "other" differs by township
 
 
 def encode(home, coding, xcols):
@@ -123,16 +130,19 @@ def unit_values(r, home):
     return units.assign(value=np.median(common[:, None] + d["zeta"][:, k] + d["psi_last"][:, k] + d["u"], axis=0))
 
 
-def published_runs():
+def published_runs(which):
+    if which == "county2025":                        # one fit per township, all on the 2023 census-block units
+        return [dict(r, model="P", year="2023") for r in
+                json.loads((REPO / "public/runs/v2/county2025_eval/runs.json").read_text()).values()]
     return [r for r in json.loads((REPO / "public/runs/v2/struct_eval/runs.json").read_text()).values()
             if r["model"] == "P"]
 
 
-def block_values():
-    """one row per census block: the model's 1 January log value of the standard home there (posterior median of
-    intercept + mu[last month] + zeta[k] + psi[k, last month] + u[s] + (x_std - training mean)' beta); the fitted
-    townships; their years; the standard home"""
-    runs = published_runs()
+def block_values(which):
+    """one row per census block: the model's log value of the standard home there in the last training month
+    (posterior median of intercept + mu[last month] + zeta[k] + psi[k, last month] + u[s] + (x_std - training mean)'
+    beta); the fitted townships; their years; the standard home"""
+    runs = published_runs(which)
     home = standard_home(runs)
     out = []
     for r in sorted(runs, key=lambda r: (r["year"], r["town"])):
@@ -204,13 +214,18 @@ def halo(width=2.5):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--set", dest="which", choices=["county2025", "assessment"], default="county2025")
     ap.add_argument("--style", choices=["colour", "light"], default="colour")
-    ap.add_argument("--zoom-town", default="17")
-    ap.add_argument("--out", default="public/figures/location_map.png")
+    ap.add_argument("--zoom-town", default=None)       # county2025: West Chicago (77); assessment: Evanston (17)
+    ap.add_argument("--out", default=None)
     a = ap.parse_args()
+    county_set = a.which == "county2025"
+    a.zoom_town = a.zoom_town or ("77" if county_set else "17")
+    a.out = a.out or ("public/figures/location_map.png" if county_set else "public/figures/location_map_assessment.png")
 
-    e, fitted_towns, year_of, home = block_values()
+    e, fitted_towns, year_of, home = block_values(a.which)
     print("standard home:", home)
+    print(f"median block: ${math.exp(e['value'].median()):,.0f}")
     blk = gpd.read_file(f"zip://{TIGER}", where="COUNTYFP20 = '031'", engine="pyogrio",
                         columns=["COUNTYFP20", "GEOID20", "ALAND20"]).to_crs(3857)
     towns_of = pd.read_parquet(UNITS["2023"], columns=["block_geoid", "town"]).drop_duplicates("block_geoid")
@@ -222,10 +237,10 @@ def main():
     fitted = towns[towns.index.isin(fitted_towns)]
     m = blk.merge(e, left_on="GEOID20", right_on="block_geoid")
     print(f"{len(m):,} blocks with an effect in {len(fitted_towns)} townships; "
-          f"{(m['effect'].abs() > LIMIT).mean():.1%} beyond the colour scale")
+          f"{(m['effect'].abs() > LIMIT[a.which]).mean():.1%} beyond the colour scale")
 
     plt.rcParams.update({"font.size": 12, "text.color": INK, "figure.facecolor": SURFACE})
-    norm = Normalize(-LIMIT, LIMIT)
+    norm = Normalize(-LIMIT[a.which], LIMIT[a.which])
     fig = plt.figure(figsize=(12, 9.2))
     ax = fig.add_axes([0.0, 0.08, 0.56, 0.92])
     zx = fig.add_axes([0.57, 0.24, 0.42, 0.72])
@@ -236,17 +251,24 @@ def main():
     bounds = (b[0] - pad, b[1] - pad, b[2] + pad, b[3] + pad)
     basemap(ax, bounds, 11, a.style)
     m.plot(ax=ax, column="effect", cmap=CMAP, norm=norm, linewidth=0, zorder=2)
-    fitted.boundary.plot(ax=ax, color="#3a3a38", linewidth=0.6, zorder=4)
     county.boundary.plot(ax=ax, color=INK, linewidth=1.4, zorder=5)
-    chicago.plot(ax=ax, color="#d9d7d0", alpha=0.45, linewidth=0, zorder=1)
-    chicago.boundary.plot(ax=ax, color=INK2, linewidth=1.0, linestyle=(0, (4, 2)), zorder=5)
-    c = chicago.iloc[0].representative_point()
-    ax.annotate("Chicago\n(not covered)", (c.x + 2500, c.y + 4000), ha="center", va="center", fontsize=13,
-                color=INK2, style="italic", zorder=6, path_effects=halo(3))
-    for lab, (dx, dy), t in [("North suburbs, 2022", (0, 0), "25"), ("South and west suburbs, 2023", (0, 0), "13")]:
-        p = towns.loc[t].geometry.representative_point()
-        ax.annotate(lab, (p.x + dx, p.y + dy), ha="center", va="center", fontsize=13, fontweight="bold",
+    if county_set:                                   # thin light township lines; the City outline a little stronger
+        fitted.boundary.plot(ax=ax, color="white", linewidth=0.45, alpha=0.8, zorder=4)
+        chicago.boundary.plot(ax=ax, color=INK2, linewidth=0.9, linestyle=(0, (4, 2)), zorder=5)
+        c = chicago.iloc[0].representative_point()
+        ax.annotate("Chicago", (c.x + 1500, c.y - 15000), ha="center", va="center", fontsize=13, fontweight="bold",
                     color=INK, zorder=6, path_effects=halo(3))
+    else:
+        fitted.boundary.plot(ax=ax, color="#3a3a38", linewidth=0.6, zorder=4)
+        chicago.plot(ax=ax, color="#d9d7d0", alpha=0.45, linewidth=0, zorder=1)
+        chicago.boundary.plot(ax=ax, color=INK2, linewidth=1.0, linestyle=(0, (4, 2)), zorder=5)
+        c = chicago.iloc[0].representative_point()
+        ax.annotate("Chicago\n(not covered)", (c.x + 2500, c.y + 4000), ha="center", va="center", fontsize=13,
+                    color=INK2, style="italic", zorder=6, path_effects=halo(3))
+        for lab, t in [("North suburbs, 2022", "25"), ("South and west suburbs, 2023", "13")]:
+            p = towns.loc[t].geometry.representative_point()
+            ax.annotate(lab, (p.x, p.y), ha="center", va="center", fontsize=13, fontweight="bold",
+                        color=INK, zorder=6, path_effects=halo(3))
     zt = towns.loc[a.zoom_town].geometry
     zb = zt.bounds
     zpad = 900
@@ -272,15 +294,18 @@ def main():
     zx.set_aspect("equal"); zx.set_xticks([]); zx.set_yticks([]); zx.set_xlabel(""); zx.set_ylabel("")
     for s in zx.spines.values():
         s.set_edgecolor(INK); s.set_linewidth(1.6)
-    zx.set_title(f"Zoom: {NAMES[a.zoom_town]} ({year_of[a.zoom_town]}), one colour per census block", fontsize=13, loc="left")
+    zlab = NAMES[a.zoom_town] if county_set else f"{NAMES[a.zoom_town]} ({year_of[a.zoom_town]})"
+    zx.set_title(f"Zoom: {zlab}, one colour per census block", fontsize=13, loc="left")
 
     # legend
     cax = fig.add_axes([0.60, 0.10, 0.36, 0.026])
     cb = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=CMAP), cax=cax, orientation="horizontal")
-    cb.set_ticks([math.log1p(t / 100) for t in TICKS], labels=[f"{t:+d}%" if t else "0" for t in TICKS])
+    cb.set_ticks([math.log1p(t / 100) for t in TICKS[a.which]],
+                labels=[f"{t:+d}%" if t else "0" for t in TICKS[a.which]])
     cb.outline.set_visible(False)
     cb.ax.tick_params(labelsize=12, length=3, color=INK2)
-    cb.set_label("Value of one standard home at 1 January,\nrelative to the median block", fontsize=13, labelpad=8)
+    when = "in October 2023" if county_set else "at 1 January"
+    cb.set_label(f"Value of one standard home {when},\nrelative to the median block", fontsize=13, labelpad=8)
     cb.ax.xaxis.set_label_position("top")
     fig.text(0.995, 0.005, "Map data © OpenStreetMap contributors (ODbL)", fontsize=10, color=INK2, ha="right")
     out = REPO / a.out

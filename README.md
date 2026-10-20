@@ -4,7 +4,7 @@ This repository contains the code of the **GL model**, an open Bayesian house va
 
 ![Value of a standard home per census block in the 30 townships studied](figures/location_map.png)
 
-*The model’s value of one standard home, the same everywhere, in each census block of the 30 suburban townships studied, relative to the median block; the north is valued at 1 January 2022, the south and west at 1 January 2023. Colour steps at neighbourhood boundaries mostly match nearby sales; some at township lines, where separately fitted townships meet, do not. Blank: blocks without valued homes; grey: Chicago, not covered. Lines: township boundaries; the rectangle marks the zoom on Evanston (right).*
+<p align="center"><sub>Location premia by census block, estimated by the GL model (<a href="#about-the-map">about the map</a>).</sub></p>
 
 *Status: first public release; results are preliminary.*
 
@@ -116,6 +116,10 @@ Differences are paired—GL minus the other model on the same sales—and comput
 The level correction of Part 2 comes in two versions. The one quoted there uses the October–December sale prices as they are, so it uses no prices after 1 January (we have not checked whether every sale record was already available then). The figure below uses those prices time-adjusted to 1 January, with the index above, which is estimated partly from later sales; it gives GL minus rebuild +0.01 points [−0.19, +0.25] in 2023 and −0.01 [−0.22, +0.20] in 2022. “Level-free” MdAPE instead divides each model’s values by its own median ratio on the evaluation sales themselves; it is an after-the-fact diagnostic.
 
 ![Typical error before and after level correction](figures/accuracy_level.png)
+
+### About the map
+
+The map shows the GL model’s value of one standard home, with the same characteristics everywhere, in each census block of the 30 suburban townships studied, relative to the median block; the north is valued at 1 January 2022, the south and west at 1 January 2023. Colour steps at neighbourhood boundaries mostly match nearby sales; some at township lines, where separately fitted townships meet, do not. Blank: blocks without valued homes; grey: Chicago, not covered here. Lines: township boundaries; the rectangle marks the zoom on Evanston (right).
 
 ### Model details
 

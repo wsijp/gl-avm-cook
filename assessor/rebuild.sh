@@ -18,6 +18,11 @@
 # Needs Docker able to run linux/amd64 images (on Apple silicon: colima start --cpu 8 --memory 16 --disk 60
 # --vm-type vz --vz-rosetta). The 2022 assess stage needs more memory than 16 GB: we gave the virtual machine 22 GB of
 # memory and a 24 GB swap file. Logs: ccao/runs/<year>_rebuild/{build,train,assess}.log.
+# It will not overwrite an earlier run: before any step runs, it stops if ccao/runs/<year>_rebuild/ already holds the
+# outputs or log of a requested stage (build: build/ or image_used.txt; train: train.log or any file in output/; assess:
+# assess.log or files in output/assessment_pin/ or assessment_card/). To repeat a finished run, use a fresh working
+# folder; move a stage's log and outputs aside only if it failed (for example one that ran out of memory).
+# The 2025 model, used for the sale-prediction test, is run from the Assessor's own image by run2025.sh.
 set -euo pipefail
 year=${1:?usage: rebuild.sh <2023|2022> [fetch] [build] [train] [assess]}
 shift
@@ -32,6 +37,20 @@ steps=("$@")
 code=ccao/model-res-avm-$year
 run=ccao/runs/${year}_rebuild
 img=gl-avm/ccao-res-$year:local
+
+# refuse to write into an earlier run, before any step runs: each stage needs its outputs and log absent
+has_files() { [ -d "$1" ] && [ -n "$(find "$1" -type f ! -name .gitkeep | head -1)" ]; }
+for step in "${steps[@]}"; do
+  case $step in
+    fetch) busy=false ;;
+    build) [ -e "$run/build" ] || [ -e "$run/image_used.txt" ] && busy=true || busy=false ;;
+    train) [ -e "$run/train.log" ] || has_files "$run/output" && busy=true || busy=false ;;
+    assess) [ -e "$run/assess.log" ] || has_files "$run/output/assessment_pin" || has_files "$run/output/assessment_card" \
+              && busy=true || busy=false ;;
+    *) echo "unknown step $step" >&2; exit 2 ;;
+  esac
+  $busy && { echo "STOP: $run already holds the $step stage's outputs or log; a finished run is a reference: repeat it in a fresh working folder (move aside only a failed stage)" >&2; exit 1; }
+done
 mkdir -p "$run"
 
 for step in "${steps[@]}"; do

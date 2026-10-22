@@ -1,9 +1,10 @@
 # Reproducing the results
 
-This file lists every step from the public inputs to the tables and figures of the [README](README.md), with the
-commands, what each step does, how long it took us and what it needs. [`reproduce.sh`](reproduce.sh) runs the same
-steps: `public/reproduce.sh all` for the main results (after preparing Docker's memory as described under "The
-Assessor's model"), or one step at a time by name.
+This file lists the steps from the public inputs to the tables and figures of the [README](README.md), with the
+commands, what each step does, how long it took us and what it needs; "Which README results are covered" below says
+which results they reproduce and which they do not. [`reproduce.sh`](reproduce.sh) runs the same steps:
+`public/reproduce.sh all` for the 1 January results (after preparing Docker's memory as described under "The
+Assessor's model"), `public/reproduce.sh county` for the sale-prediction test, or one step at a time by name.
 
 ## What we used, and what you need first
 - **Hardware:** one Apple M5 laptop (10 cores, 32 GB of memory), macOS. Allow about 25 GB of free disk space, plus the
@@ -22,8 +23,10 @@ Assessor's model"), or one step at a time by name.
 - `git`, `curl`, `rsync`, `shasum` and `bash`.
 
 ## Folder layout
-The scripts' code is exactly the code that produced the published results (only their comments were tidied for
-publication), and they expect to run from a working folder that holds this repository as a subfolder named `public`. Everything else is created beside it:
+The Python and Stan code is exactly the code that produced the published results (only their comments were tidied
+for publication). The shell scripts (`reproduce.sh`, `assessor/rebuild.sh`, `assessor/run2025.sh`) run the commands
+we ran, gathered for this release; `assessor/run2025.sh` repeats our 2025 run of the Assessor's model (same image,
+input and command) but was not itself used for it. The scripts expect to run from a working folder that holds this repository as a subfolder named `public`. Everything else is created beside it:
 
 ```
 work/                     run every command from here
@@ -31,6 +34,7 @@ work/                     run every command from here
   .venv/                  Python environment (the scripts call .venv/bin/python)
   ccao/inputs/<year>/     the Assessor's input files (downloaded)
   ccao/model-res-avm-<year>/, ccao/runs/<year>_rebuild/   the Assessor's code and our runs of it
+  ccao/runs/2025_full/    the Assessor's 2025 model, run for the sale-prediction test
   notes/v2/logs/, notes/v2/figures/, notes/v2/explore_blocks/   logs, working figures, the census-block file
 ```
 Prepared data go to `public/data/` and fits and results to `public/runs/`; both are ignored by git.
@@ -65,7 +69,8 @@ Times are wall-clock on the machine above.
 | 3 | `public/reproduce.sh data` | For each year: the valued homes, the census blocks and their map, the sales used to check accuracy, the price index and the time adjustment, and one prepared folder per township (data and characteristic coding). | about 10 minutes |
 | 4 | `public/reproduce.sh assessor` | Rebuilds the Assessor's model for each year and runs it ([`assessor/rebuild.sh`](assessor/rebuild.sh); details and memory needs below), then compares our rebuild with the published values. | about 1 hour plus downloads |
 | 5 | `public/reproduce.sh fit` | Fits the GL model in each of the 30 townships (17 for 2023, 13 for 2022), at most three at a time, and values every home at 1 January (`scripts/v2/struct_run.py`, calling `fit_struct.py` and `value_v2.py`). | about 1 hour 40 minutes (4 hours of fitting in total) |
-| 6 | `public/reproduce.sh evaluate` | Every measure and interval of the README, both years, the figures in `public/figures/`, and the remaining README numbers. | about 30 minutes |
+| 6 | `public/reproduce.sh evaluate` | Every measure and interval of the 1 January tests in the README, both years, their figures in `public/figures/`, and the remaining 1 January numbers. | about 30 minutes |
+| 7 | `public/reproduce.sh county` (optional, not part of `all`; after steps 1 and 3) | The sale-prediction test: runs the Assessor's 2025 model, fits the GL in all 38 townships and predicts the test sales, then the README's sale-prediction table, the by-township figure and the map at the top (see "The sale-prediction test"). | about 3½ hours (3 h 26 min of fitting at three at a time) |
 
 `all` runs steps setup and 1–6. The `assessor` step runs the 2022 assess stage straight after the others, so with
 `all` give the Docker machine the larger memory and swap described under "The Assessor's model" before you start (or
@@ -80,6 +85,7 @@ run the steps one by one). Beyond `all`:
   ```
   The pooled GL − rebuild MdAPE difference is in `public/runs/v2/struct_eval/chosen_seed2/ratio_pooled_primary.json`
   (pair `gl-assessor`: −0.976); the first seed's is in `chosen/ratio_pooled_primary.json` (−0.974).
+- **The sale-prediction test:** `public/reproduce.sh county`; see "The sale-prediction test" below.
 - **Not included in this repository:** the sale-history check of the README ("Further checks"; 17 further fits on
   training data with the selected homes' earlier sales removed) and the number-of-flats variant mentioned under the
   multi-family results. Their numbers cannot be reproduced from this release.
@@ -102,7 +108,38 @@ with and without time adjustment), `equity_eval.py` and `equity_figure.py` (the 
 decile figure), `readme_figures.py`, `readme_numbers.py` and `fig_location_map.py --set assessment` (the map of the 1 January fits,
 `figures/location_map_assessment.png`; it downloads about 70 OpenStreetMap tiles once, into
 `public/data/v2/osm_tiles/`). The README's sale-prediction test, its by-township figure and the whole-county map at
-the top (`fig_location_map.py --set county2025`) come from fits whose scripts are not yet in this release.
+the top come from step 7 (`county`), below.
+
+## The sale-prediction test
+`public/reproduce.sh county` runs, after `download` (which also fetches the 2025 input), `opendata` and `data` (`data`
+needs the open-data files and builds the census-block units the county step reuses), so from a fresh working folder:
+`public/reproduce.sh setup download opendata data county`. It stops the Docker machine (colima) before the GL fits:
+1. `public/assessor/run2025.sh`: clones the Assessor's code at the tag `2025-assessment-year` (commit
+   `f292e7b3a31cd01df5950b3b6bc54e848666a33c`) into `ccao/model-res-avm-2025/`, places the 2025 input in its `input/`
+   folder, pulls the Assessor's own image for that tag pinned by digest
+   (`ghcr.io/ccao-data/model-res-avm@sha256:faba881c593c4743a7873d720eff9b8a980d46f4b2088d7e598fefcf17215b7b`; no
+   build), and runs `pipeline/01-train.R` unchanged into `ccao/runs/2025_full/output/`. Training took us 7 minutes,
+   plus the image download. Its predictions for its own test
+   sales are in `output/test_card/model_test_card.parquet`, column `pred_card_initial_fmv`. Ours had sha256
+   `3954f1505c1772e791dad2a1b271f3f94119192635fa89976b76506b7963e60a`; whether a run on another machine matches it
+   bit for bit is untested. The test sales themselves (their keys) depend only on the input and the Assessor's split,
+   and step 2 checks that they match.
+2. `scripts/v2/county2025_prep.py`: the Assessor's split of the 2025 input (381,763 sales; the last 38,177 are the
+   test, checked against the Assessor's test sales), placement in the census-block units, and one prepared folder per
+   township in `public/data/v2/prep_county2025/`. About 3 minutes.
+3. `scripts/v2/county2025_run.py` (calling `county2025_fit.py`, which is `fit_struct.py` with 94 training months, and
+   `county2025_predict.py`): fits model P in all 38 townships, at most three at a time, and predicts every test sale.
+   3 hours 26 minutes for us (9.2 hours of fitting in all; the longest fits were Lake, about 2 hours, and Jefferson
+   and West Chicago, 1 hour 5–20 minutes each).
+   Before each fit the driver waits for 25% of memory to be free, which it reads with macOS's `memory_pressure`; as
+   written it runs on macOS only.
+4. `scripts/v2/county2025_eval.py`: both models' MdAPE, median ratio, COD and PRD and the paired 90% intervals, in
+   `public/runs/v2/county2025_eval/summary.csv` and `summary.json` (per-township convergence in `convergence.csv`).
+   Then `county2025_figure.py` (the by-township figure, copied to `public/figures/county_by_township.png`) and
+   `fig_location_map.py --set county2025` (the map at the top, `public/figures/location_map.png`).
+
+`county2025_run.py` and `county2025_eval.py` gained options after our run (for further tests not in this
+repository); their defaults, which `reproduce.sh` uses, run the published test unchanged.
 
 ## Where each published number is written
 All under `public/runs/v2/`:
@@ -117,7 +154,38 @@ All under `public/runs/v2/`:
 | single-family IAAO measures; without Bloom and Thornton; exact matches with the published values | `struct_eval/chosen/readme_numbers.json` |
 | convergence (R-hat, divergent transitions) | `struct_eval/convergence_P.json`, `.csv` |
 | the simpler model (optional) | `struct_eval/selection.json` |
+| sale-prediction test: MdAPE, median ratio, COD, PRD, differences and intervals (county, City, suburbs, townships, horizons, earlier sale, level-free) | `county2025_eval/summary.csv`, `summary.json` |
+| sale-prediction test: convergence, runtimes | `county2025_eval/convergence.csv`, `runs.json` |
 
+## Which README results are covered
+| README result | command | covered |
+|---|---|---|
+| Sale-prediction test: table, county / Chicago / suburbs, township results, diagnostics, convergence | `reproduce.sh county` | yes |
+| By-township figure (`figures/county_by_township.png`) | `reproduce.sh county` | yes |
+| Map at the top (`figures/location_map.png`) | `reproduce.sh county` | yes |
+| 1 January tests: accuracy, level, uniformity, regressivity, intervals, both years | `reproduce.sh all` (`evaluate`) | yes |
+| Corrected in advance; level-free; without time adjustment | `reproduce.sh all` (`evaluate`) | yes |
+| Published values, PRB, price deciles, IAAO measures, multi-family and earlier-sale subgroups | `reproduce.sh all` (`evaluate`) | yes |
+| Figures `accuracy_level.png`, `by_township.png`, `price_deciles.png`, `location_map_assessment.png` | `reproduce.sh all` (`evaluate`) | yes |
+| Exact matches of our rebuild with the published values | `reproduce.sh all` (`assessor`, `evaluate`) | yes |
+| The simpler model ("0.81 points higher") | `reproduce.sh simpler`, then `evaluate` | yes |
+| The second seed ("−0.98 against −0.97") | the two commands above | yes |
+| Map boundary check (correlations 0.79 and 0.64) | none | no: script not included |
+| Sale-history check (704 homes, +0.65%) | none | no: scripts not included |
+| Number-of-flats variant | none | no: scripts not included |
+
+"Covered" means that the commands that produced the result are here; it is not a promise of identical numbers (see
+"Live downloads" and "What to expect").
+
+## What has been tested of this workflow
+From a fresh copy of this repository in an empty working folder, we ran `setup`, the input check of `download` (on
+copies of our input files, so nothing was fetched) and `data` for both years (with copies of our open-data files, so
+the live queries were not repeated): every prepared data file was identical to ours, apart from three timing records
+and, in 32 manifests, the scripts' own hashes and creation times. We then fitted and valued one township (River Forest) with model P: its
+values were identical to ours. Not tested from a fresh copy: the downloads and live queries, the Docker rebuilds of
+2023 and 2022 and the 2025 run (`assessor/`), the full fits, `evaluate`, and the `county` step. The Python scripts and
+the model file are the ones that produced the results; the shell wrappers (`reproduce.sh`, `assessor/rebuild.sh`,
+`assessor/run2025.sh`) were assembled for this repository from the commands we ran and have not been run end to end.
 ## The Assessor's model
 `public/assessor/rebuild.sh <year>` does, for 2023 and for 2022:
 1. **fetch:** clones [ccao-data/model-res-avm](https://github.com/ccao-data/model-res-avm) at the tag
@@ -133,6 +201,11 @@ All under `public/runs/v2/`:
 3. **train** and **assess:** runs `pipeline/01-train.R` and `pipeline/02-assess.R` unchanged, with the year's input
    files mounted as `input/` (no database ingest, no upload). About 5–8 minutes per stage. The values are in
    `ccao/runs/<year>_rebuild/output/assessment_pin/model_assessment_pin.parquet`, column `pred_pin_final_fmv_round`.
+
+`rebuild.sh` will not overwrite an earlier run: before any step runs, it stops if `ccao/runs/<year>_rebuild/`
+already holds the outputs or log of a requested stage. A finished run is a reference result: to repeat it, use a fresh working folder. Only a
+failed run of your own (for example a stage that ran out of memory) should be moved aside before running it again. `run2025.sh` (see "The sale-prediction test") does the same for
+`ccao/runs/2025_full/`.
 
 **Memory for the 2022 assess stage.** With 16 GB the 2022 assess stage was stopped for lack of memory, also at 22 GB
 without swap. It finished with 22 GB of memory and a 24 GB swap file inside the virtual machine. With colima, before

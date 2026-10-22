@@ -49,7 +49,7 @@ We compare GL with the Assessor’s model in two settings: predicting later sale
 
 **In predicting sale prices across the county, the Assessor’s model is more accurate, mostly in Chicago.** On the Assessor’s own test of its 2025 model (38,177 sales from October 2023 to December 2024), the typical error (MdAPE) of the GL predictions is 15.11% against 14.01% for the Assessor’s model: 1.10 percentage points higher (90% interval +0.96 to +1.23). The gap is 2.13 points in Chicago (+1.83 to +2.39) and 0.36 points in the suburbs (+0.25 to +0.49).
 
-**In valuing homes at 1 January, the GL values sit at the right overall level and the Assessor’s about 5% low, which makes the GL about one point more accurate than our rebuild of the Assessor’s model.** Once each model’s level is corrected in advance, there is no clear difference in typical error.
+**In valuing homes at 1 January, the GL values sit at the right overall level and the Assessor’s about 3–4% low, which makes the GL somewhat more accurate than our rebuild of the Assessor’s model, by 0.3–0.4 percentage points when both are compared before rounding.** Once each model’s level is corrected in advance, there is no clear difference in typical error.
 
 ### Results at a glance
 
@@ -67,11 +67,11 @@ We compare GL with the Assessor’s model in two settings: predicting later sale
 | ↳ Suburbs | GL | 22,500 | 12.76 | 0.945 | 17.9 | 1.055 |
 | | Assessor’s 2025 model | | 12.40 | 0.945 | 17.7 | 1.059 |
 | **1 January assessment, south and west suburbs,** 2023 | GL | 11,356 | 14.60 | 0.988 | 22.8 | 1.074 |
-| | Assessor, our rebuild | | 15.67 | 0.944 | 23.6 | 1.072 |
+| | Assessor, our rebuild | | 15.00 | 0.963 | 23.6 | 1.078 |
 | **1 January assessment, north suburbs,** 2022 | GL | 10,825 | 9.52 | 0.993 | 12.9 | 1.032 |
-| | Assessor, our rebuild | | 10.39 | 0.954 | 13.3 | 1.028 |
+| | Assessor, our rebuild | | 9.86 | 0.967 | 13.2 | 1.031 |
 
-Compare models within each test; the tests use different sales, dates and evaluation rules. In the sale-prediction test, values are compared with the prices actually paid; in the 1 January tests, with sale prices adjusted to 1 January. Chicago and the suburbs are parts of the county row, not further tests.
+Compare models within each test; the tests use different sales, dates and evaluation rules. In the sale-prediction test, values are compared with the prices actually paid; in the 1 January tests, with sale prices adjusted to 1 January, and both models’ values before rounding. Chicago and the suburbs are parts of the county row, not further tests.
 
 ### Predicting sales across Cook County
 
@@ -81,19 +81,19 @@ The two models do not use the same information. Both receive each home’s chara
 
 GL is less accurate county-wide, by 1.10 MdAPE points, and the gap is mostly in Chicago (+2.13), where GL’s MdAPE is higher in seven of the eight townships, clearly so in six. In the suburbs the two models are close (+0.36): the difference is within half a point either way in 14 of the 30 suburban townships, GL is clearly more accurate (the 90% interval lies below zero) in Hanover and Schaumburg, and clearly less accurate in 9, most of all Rich, Calumet and Cicero. The largest gaps are in lower-priced areas where GL’s predictions fall well below the prices (median ratio 0.87–0.91 in Calumet, Rich, Hyde Park, Lake and Cicero), but the two dearest Chicago townships, Lake View and North Chicago, also show gaps of 2.65 points. The gap is not only a difference in overall level: after each model’s predictions are divided by its own median ratio on the test sales, GL’s MdAPE is still 1.16 points higher (+1.04 to +1.31). COD is the same for both models (22.6), and GL’s predictions are slightly less regressive (PRD 1.073 against 1.087).
 
-Why the Assessor’s model does better in Chicago has not been tested; its additional location, surrounding-area, census and sale-date predictors are obvious candidates. This is a new comparison on an existing test set: an earlier version of this project used the same test sales for 14 townships with an earlier version of GL (where GL was 0.27 points less accurate), and what it learned informed later model development. The scripts of this test are not included in this release.
+Why the Assessor’s model does better in Chicago has not been tested; its additional location, surrounding-area, census and sale-date predictors are obvious candidates. This is a new comparison on an existing test set: an earlier version of this project used the same test sales for 14 townships with an earlier version of GL (where GL was 0.27 points less accurate), and what it learned informed later model development. The test, its by-township figure and the map at the top are reproduced by `public/reproduce.sh county` ([REPRODUCE.md](REPRODUCE.md)).
 
 ### Valuing homes at 1 January
 
 An assessor must value every home on the roll at a fixed date, 1 January in Cook County, before the year’s sales are known. We value the same homes (single-family houses, two- to six-flat buildings and town houses) at the same date, from the same published training data, as the Assessor’s model, and check both against sales later in the year. Our benchmark is our rebuild of the Assessor’s model from its public code and data; the values the Assessor published are compared in the details below.
 
-**As delivered, the GL values are more accurate than our rebuild of the Assessor’s model in both years.** Their typical error is about one percentage point lower: 14.60% against 15.67% in 2023 (difference −1.07 points, 90% interval −1.34 to −0.78) and 9.52% against 10.39% in 2022 (−0.87, −1.06 to −0.69). What an assessor looks for:
+**As delivered, the GL values are somewhat more accurate than our rebuild of the Assessor’s model in both years.** Comparing both models’ values before rounding, their typical error is lower by 0.3–0.4 percentage points: 14.60% against 15.00% in 2023 (difference −0.40 points, 90% interval −0.66 to −0.11) and 9.52% against 9.86% in 2022 (−0.33, −0.54 to −0.18). The Assessor rounds its values down; with both models’ values rounded that way, the differences are −0.72 and −0.65 points (details below). What an assessor looks for:
 
-- **Level:** the GL values are at the right overall level (median ratio 0.99); our rebuild of the Assessor’s values is about 5% low (0.94–0.95).
-- **Uniformity:** the GL values are slightly more uniform (COD lower by 0.7 points in 2023 and 0.3 in 2022).
-- **Regressivity:** the two models are equally regressive (PRD 1.07 in 2023, 1.03 in 2022). In 2023 neither meets the guidance of the International Association of Assessing Officers (IAAO); in 2022 both are at its upper edge (details below).
+- **Level:** the GL values are at the right overall level (median ratio 0.99); our rebuild of the Assessor’s values is about 3–4% low before rounding (0.96–0.97) and about 5% low after it (0.94–0.95).
+- **Uniformity:** the GL values are slightly more uniform (COD lower by 0.8 points in 2023 and 0.2 in 2022).
+- **Regressivity:** the two models are about equally regressive (PRD 1.07 for GL and 1.08 for the rebuild in 2023, 1.03 for both in 2022). In 2023 neither meets the guidance of the International Association of Assessing Officers (IAAO); in 2022 both are at its upper edge (details below).
 
-**Once each model’s overall level is corrected in advance, there is no clear difference in typical error.** The correction divides each model’s values by its own median ratio on the previous October–December sales, using no prices after 1 January. GL minus rebuild MdAPE is then +0.13 points in 2023 (90% interval −0.18 to +0.34) and 0.00 in 2022 (−0.18 to +0.22). The GL’s advantage as delivered is therefore its level.
+**Once each model’s overall level is corrected in advance, there is no clear difference in typical error.** The correction divides each model’s values by its own median ratio on the previous October–December sales, using no prices after 1 January. GL minus rebuild MdAPE is then +0.20 points in 2023 (90% interval −0.05 to +0.42) and +0.09 in 2022 (−0.10 to +0.29). The GL’s advantage as delivered is therefore its level.
 
 The areas are the parts of the county the Assessor revalued in each year: 17 townships of the southern and western suburbs in 2023 (11,356 evaluation sales) and 13 of the northern suburbs in 2022 (10,825). Chicago cannot be tested this way because the Assessor’s model inputs for its reassessment years (2021 and 2024) are not public; the sale-prediction test covers it.
 
@@ -161,13 +161,17 @@ Neither model was fitted to the evaluation sales.
 
 Sale prices are adjusted back to 1 January using a separate monthly price index for each study area (not the GL model’s own index), fitted to sales from the assessment year and the preceding year. The index controls for neighbourhood, property class, building and land area, and age. Its 1 January level is the average of the December and January log-price effects. Homes are divided into five fixed groups; each group’s adjustments use an index fitted to the other four, so a home’s own sale never enters its adjustment.
 
-The Assessor’s final model values are rounded down (above $100,000, to the $10,000 below). The comparison uses those final values; rounding is part of the values being compared. GL values are not rounded.
+The comparison uses both models’ values before rounding. For the Assessor, that is its model’s value for each home after the Assessor’s own adjustments and before rounding (`pred_pin_final_fmv` in the output of its assessment stage). The model’s raw output (`pred_pin_initial_fmv`) is the sum of its predictions for a parcel’s buildings; the adjustments cap some parcels with two buildings, average values across the parcels sharing a prorated building, and average them across a town-house complex. Among the evaluation sales only the complex averaging changes values (663 sales in 2023 and 1,375 in 2022, by a median 0.1–0.3%), and GL averages over the same groups, so these are the like-for-like values. With the raw output instead, GL minus rebuild MdAPE is −0.43 points in 2023 and −0.40 in 2022.
+
+The Assessor then rounds its values down (above $100,000, to the $10,000 below), which lowers them by a median 1.9% on the 2023 evaluation sales and 1.2% on the 2022 ones; the values it publishes are rounded. With both models’ values rounded that way, MdAPE is 14.95% for GL against 15.67% for the rebuild in 2023 (−0.72 points [−0.99, −0.45]; median ratio 0.969 against 0.944) and 9.75% against 10.39% in 2022 (−0.65 [−0.86, −0.47]; 0.980 against 0.954). Rounding down lowers both models’ level, and the GL, starting from the right level, loses less accuracy by it.
 
 Differences are paired—GL minus the other model on the same sales—and computed from unrounded statistics, so they can differ slightly from differences of the table’s entries. The 90% intervals use 2,000 bootstrap redraws, keeping homes in an identical-unit group together and resampling separately within townships. They reflect uncertainty about which sales were observed, holding the fitted models, price index and correction factors fixed.
 
-The level correction of Part 2 comes in two versions. The one quoted there uses the October–December sale prices as they are, so it uses no prices after 1 January (we have not checked whether every sale record was already available then). The figure below uses those prices time-adjusted to 1 January, with the index above, which is estimated partly from later sales; it gives GL minus rebuild +0.01 points [−0.19, +0.25] in 2023 and −0.01 [−0.22, +0.20] in 2022. “Level-free” MdAPE instead divides each model’s values by its own median ratio on the evaluation sales themselves; it is an after-the-fact diagnostic.
+The level correction of Part 2 comes in two versions. The one quoted there uses the October–December sale prices as they are, so it uses no prices after 1 January (we have not checked whether every sale record was already available then). The figure below uses those prices time-adjusted to 1 January, with the index above, which is estimated partly from later sales; it gives GL minus rebuild +0.14 points [−0.10, +0.39] in 2023 and +0.07 [−0.12, +0.31] in 2022. “Level-free” MdAPE instead divides each model’s values by its own median ratio on the evaluation sales themselves; it is an after-the-fact diagnostic.
 
 ![Typical error before and after level correction](figures/accuracy_level.png)
+
+<p align="center"><sub>This figure still compares GL with the rebuild’s rounded values (the comparison used before 22 October 2026); it has not yet been redrawn with unrounded values.</sub></p>
 
 ### Model details
 
@@ -194,32 +198,36 @@ A simpler model with one block graph per township and no neighbourhood effects w
 
 ### 1 January tests: regressivity and appraisal guidance
 
-The GL and rebuilt Assessor values are similarly regressive. Price-related bias (PRB) is roughly the proportional change in the ratio when a home’s value doubles (the slope of the relative ratio on the base-2 logarithm of a proxy averaging value and price). It is −0.124 for GL and −0.129 for the rebuild in 2023, and −0.034 and −0.024 in 2022. Negative values indicate higher ratios for cheaper homes.
+The GL and rebuilt Assessor values are similarly regressive. Price-related bias (PRB) is roughly the proportional change in the ratio when a home’s value doubles (the slope of the relative ratio on the base-2 logarithm of a proxy averaging value and price). It is −0.124 for GL and −0.145 for the rebuild in 2023, and −0.034 and −0.033 in 2022. Negative values indicate higher ratios for cheaper homes.
 
-The IAAO’s *Standard on Ratio Studies* (2013) suggests a COD of 5.0–15.0 for single-family homes, 5.0–10.0 in newer or fairly similar areas, and 5.0–20.0 for two- to four-unit buildings; a PRD of 0.98–1.03; and a PRB between −0.05 and +0.05. On single-family sales alone, both models fall outside all three ranges in the 2023 area. In 2022, both fall within the COD and PRB ranges and just above the PRD range (single-family PRD 1.034 for GL and 1.031 for the rebuild). Unlike many assessment ratio studies, ours does not trim outlying ratios.
+The IAAO’s *Standard on Ratio Studies* (2013) suggests a COD of 5.0–15.0 for single-family homes, 5.0–10.0 in newer or fairly similar areas, and 5.0–20.0 for two- to four-unit buildings; a PRD of 0.98–1.03; and a PRB between −0.05 and +0.05. On single-family sales alone, both models fall outside all three ranges in the 2023 area. In 2022, both fall within the COD and PRB ranges and just above the PRD range (single-family PRD 1.034 for both). Unlike many assessment ratio studies, ours does not trim outlying ratios.
 
 ![Median ratio by sale-price decile](figures/price_deciles.png)
+
+<p align="center"><sub>This figure still compares GL with the rebuild’s rounded values (the comparison used before 22 October 2026); it has not yet been redrawn with unrounded values.</sub></p>
 
 Grouping by sale price can exaggerate apparent regressivity because a home that happens to sell cheaply has both a low price and a high ratio. PRB is less affected because of its proxy. The shaded 0.90–1.10 band is IAAO guidance for overall appraisal level, shown for reference, rather than a standard for price groups.
 
 ### 1 January tests: multi-family homes and township differences
 
-For two- to six-flat buildings, GL’s typical error is higher than the rebuild’s: by +1.53 percentage points [+0.12, +2.49] in 2023 and +1.41 [+0.002, +2.69] in 2022. Correcting the overall level does not remove this gap. GL sees relatively few such sales within most townships, while the Assessor’s model learns from the whole county, including Chicago. A variant coding the number of flats numerically instead of categorically did not close the gap; its scripts are not included.
+For two- to six-flat buildings, GL’s typical error is higher than the rebuild’s: by +1.83 percentage points [+0.57, +2.69] in 2023 and +1.59 [+0.30, +3.00] in 2022. Correcting the overall level does not remove this gap. GL sees relatively few such sales within most townships, while the Assessor’s model learns from the whole county, including Chicago. A variant coding the number of flats numerically instead of categorically did not close the gap; its scripts are not included.
 
-Some townships favour the Assessor’s model, including Oak Park, where GL’s MdAPE is +1.67 points higher [+0.37, +2.80] in 2023.
+Some townships favour the Assessor’s model, including Oak Park, where GL’s MdAPE is +2.02 points higher [+0.76, +2.98] in 2023.
 
 ![GL minus rebuilt Assessor results by township](figures/by_township.png)
 
+<p align="center"><sub>This figure still compares GL with the rebuild’s rounded values (the comparison used before 22 October 2026); it has not yet been redrawn with unrounded values.</sub></p>
+
 ### 1 January tests: published values and the rebuild
 
-The values the Assessor published, on the same evaluation sales as the headline table:
+The values the Assessor published, on the same evaluation sales as the headline table. Published values are rounded down, so in this table all values, including GL’s, are rounded the Assessor’s way:
 
 | Area and year | Values | MdAPE, % | Median ratio | COD | PRD |
 |---|---|---:|---:|---:|---:|
-| South and west, 2023 | GL | 14.60 | 0.988 | 22.8 | 1.074 |
+| South and west, 2023 | GL | 14.95 | 0.969 | 22.8 | 1.069 |
 | | Assessor, our rebuild | 15.67 | 0.944 | 23.6 | 1.072 |
 | | Assessor, published | 15.73 | 0.942 | 23.5 | 1.061 |
-| North, 2022 | GL | 9.52 | 0.993 | 12.9 | 1.032 |
+| North, 2022 | GL | 9.75 | 0.980 | 13.0 | 1.029 |
 | | Assessor, our rebuild | 10.39 | 0.954 | 13.3 | 1.028 |
 | | Assessor, published | 9.55 | 0.966 | 12.7 | 1.028 |
 
@@ -227,7 +235,7 @@ In 2022, the Assessor’s published values are more accurate than our rebuild fo
 
 Our rebuild runs the Assessor’s tagged training and valuation code unchanged, using public inputs. It is not the production run. It reproduces published values exactly for 72% of 362,957 homes with both values in the 2023 area and 76% of 294,805 in 2022, including homes excluded from our valuation sample.
 
-Bloom and Thornton differ more noticeably in 2023. In Bloom, rebuilt values are a median 9% above published values and only 27% match within $1 on the assessed-value scale, against 86% in the whole 2023 area; in Thornton, 68% match. Excluding both townships leaves the GL’s MdAPE advantage over the rebuild almost unchanged: −1.03 points [−1.35, −0.78].
+Bloom and Thornton differ more noticeably in 2023. In Bloom, rebuilt values are a median 9% above published values and only 27% match within $1 on the assessed-value scale, against 86% in the whole 2023 area; in Thornton, 68% match. Excluding both townships leaves the GL’s MdAPE advantage over the rebuild slightly smaller: −0.31 points [−0.60, −0.05].
 
 Published 2023 values are less regressive than both models overall. Excluding Bloom and Thornton, published and rebuilt values have the same PRD, 1.054, compared with GL’s 1.061.
 
@@ -241,11 +249,11 @@ To check how much GL depends on a home’s own earlier sales, we selected 704 ho
 
 Both tests are retrospective. The 1 January tests compare two years in two different areas; year and area change together, so their effects cannot be separated. Condominiums are not covered, and Chicago only in the sale-prediction test. The 1 January evaluation sales were also used to choose between GL and its simpler version (see “Model details”); the sale-prediction test sales were used by an earlier version of this project (Part 2).
 
-The 1 January results depend on adjusting sale prices to the valuation date. Without adjustment, GL’s MdAPE advantage over the rebuild grows to −2.05 points in 2023 and −2.15 in 2022. Prices rose during both years; our interpretation is that unadjusted prices favour the model with the higher overall level.
+The 1 January results depend on adjusting sale prices to the valuation date. Without adjustment, GL’s MdAPE advantage over the rebuild grows to −1.04 points in 2023 and −1.31 in 2022. Prices rose during both years; our interpretation is that unadjusted prices favour the model with the higher overall level.
 
-In the 1 January tests, all neighbourhood effects, block effects and home values meet R-hat ≤ 1.01 across the 30 townships (the four chains agree). Some scale parameters reach 1.015. The sampler reported divergent transitions, a sign of difficult geometry, in five township fits: 116 of 4,000 sampling iterations in Norwood Park in 2022, and fewer than 15 in each of the other four. These fits were recorded rather than refitted. A second random seed gave a similar GL minus rebuild MdAPE difference on both years’ sales together, −0.98 against −0.97 points.
+In the 1 January tests, all neighbourhood effects, block effects and home values meet R-hat ≤ 1.01 across the 30 townships (the four chains agree). Some scale parameters reach 1.015. The sampler reported divergent transitions, a sign of difficult geometry, in five township fits: 116 of 4,000 sampling iterations in Norwood Park in 2022, and fewer than 15 in each of the other four. These fits were recorded rather than refitted. A second random seed gave a similar GL minus rebuild MdAPE difference on both years’ sales together, −0.98 against −0.97 points (against the rebuild’s rounded values; not repeated before rounding).
 
-Exact reproduction is not guaranteed. Open-data queries are live and their contents can change; software and compiler differences may also affect results. [REPRODUCE.md](REPRODUCE.md) records downloads, checksums and reproduction limits. The sale-prediction test, the sale-history check and the number-of-flats variant are outside the released workflow.
+Exact reproduction is not guaranteed. Open-data queries are live and their contents can change; software and compiler differences may also affect results. [REPRODUCE.md](REPRODUCE.md) records downloads, checksums and reproduction limits. The sale-prediction test is a separate, optional step (`public/reproduce.sh county`, about 3½ hours); the sale-history check, the map boundary check and the number-of-flats variant are outside the released workflow.
 
 ## Licences and terms
 

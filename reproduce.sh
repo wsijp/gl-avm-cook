@@ -6,6 +6,8 @@
 #   steps, in order: setup download opendata data assessor fit evaluate      (all: every step in this order)
 #   optional: simpler   (fits the simpler model without neighbourhood effects; ~9 hours of fitting; run before
 #                        evaluate, which then also writes the comparison)
+#             county    (the sale-prediction test: the Assessor's 2025 model, then the GL in all 38 townships,
+#                        ~3.5 hours at three fits at a time; after download, opendata and data; not part of all)
 #
 # Run from the working folder that holds this repository as public/. Python is called as .venv/bin/python (the scripts
 # start their own subprocesses with that path). Outputs: ccao/ (the Assessor's inputs, code and runs), public/data/,
@@ -21,6 +23,14 @@ export CMDSTAN=${CMDSTAN:-$HOME/.cmdstan/cmdstan-2.39.0}   # the CmdStan version
 run() { echo "+ $*"; nice -n 15 "$@"; }
 fetch() {   # fetch URL FILE: skip if FILE exists; download to a temporary name and rename only on success
   [ -f "$2" ] || { curl --fail -L -o "$2.part" "$1" && mv "$2.part" "$2"; }
+}
+
+free_docker_memory() {   # the Docker machine and the GL fits must not share memory (REPRODUCE.md)
+  if command -v colima > /dev/null && colima status > /dev/null 2>&1; then
+    echo "+ colima stop   (frees the Docker machine's memory before the GL fits)"; colima stop
+  elif command -v docker > /dev/null && docker info > /dev/null 2>&1; then
+    echo "NOTE: Docker is running; stop it (or its virtual machine) before the GL fits to free its memory" >&2
+  fi
 }
 
 step_setup() {
@@ -82,12 +92,27 @@ step_assessor() {
 }
 
 step_fit() {
+  free_docker_memory
   # the published model (P) in every township: fit, then value every home at 1 January
   run $PY -I $S/struct_run.py --models P > notes/v2/logs/struct_driver.log 2>&1
 }
 
 step_simpler() {
+  free_docker_memory
   run $PY -I $S/struct_run.py --models S >> notes/v2/logs/struct_driver.log 2>&1
+}
+
+step_county() {
+  # the sale-prediction test: the Assessor's 2025 model on its own split (public/assessor/run2025.sh), then the GL
+  # fitted to each township's training sales and predicting its test sales; the README's table, figure and top map
+  public/assessor/run2025.sh
+  free_docker_memory
+  run $PY -I $S/county2025_prep.py
+  run $PY -I $S/county2025_run.py > notes/v2/logs/county2025_driver.log 2>&1
+  run $PY -I $S/county2025_eval.py
+  run $PY -I $S/county2025_figure.py
+  cp notes/v2/figures/county2025_mdape_difference.png public/figures/county_by_township.png
+  run $PY -I $S/fig_location_map.py --set county2025   # the map at the top of the README
 }
 
 step_evaluate() {
@@ -108,7 +133,7 @@ step_evaluate() {
 }
 
 steps=("$@")
-[ ${#steps[@]} -gt 0 ] || { sed -n '2,13p' "$0"; exit 2; }
+[ ${#steps[@]} -gt 0 ] || { sed -n '2,14p' "$0"; exit 2; }
 [ "${steps[0]}" = all ] && steps=(setup download opendata data assessor fit evaluate)
 for s in "${steps[@]}"; do
   echo "=== $s $(date '+%Y-%m-%d %H:%M:%S')"

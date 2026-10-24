@@ -6,8 +6,11 @@
 #   steps, in order: setup download opendata data assessor fit evaluate      (all: every step in this order)
 #   optional: simpler   (fits the simpler model without neighbourhood effects; ~9 hours of fitting; run before
 #                        evaluate, which then also writes the comparison)
-#             county    (the sale-prediction test: the Assessor's 2025 model, then the GL in all 38 townships,
-#                        ~3.5 hours at three fits at a time; after download, opendata and data; not part of all)
+#             county    (the sale-prediction test of the published model: the Assessor's 2025 model, then the GL in
+#                        all 38 townships, ~3.5 hours at three fits at a time; after download, opendata and data; not
+#                        part of all)
+#             final     (the sale-prediction test of the final model: sale histories, the earlier sale-history model's
+#                        fits it reuses, then the final model's 56 fits, ~1 day at three fits at a time; after county)
 #
 # Run from the working folder that holds this repository as public/. Python is called as .venv/bin/python (the scripts
 # start their own subprocesses with that path). Outputs: ccao/ (the Assessor's inputs, code and runs), public/data/,
@@ -103,8 +106,9 @@ step_simpler() {
 }
 
 step_county() {
-  # the sale-prediction test: the Assessor's 2025 model on its own split (public/assessor/run2025.sh), then the GL
-  # fitted to each township's training sales and predicting its test sales; the README's table, figure and top map
+  # the sale-prediction test of the published model: the Assessor's 2025 model on its own split
+  # (public/assessor/run2025.sh), then the published GL fitted to each township's training sales and predicting its
+  # test sales; the README's earlier results for the published model (the final model: step final)
   public/assessor/run2025.sh
   free_docker_memory
   run $PY -I $S/county2025_prep.py
@@ -112,7 +116,31 @@ step_county() {
   run $PY -I $S/county2025_eval.py
   run $PY -I $S/county2025_figure.py
   cp notes/v2/figures/county2025_mdape_difference.png public/figures/county_by_township.png
-  run $PY -I $S/fig_location_map.py --set county2025   # the map at the top of the README
+}
+
+step_final() {
+  # the final sale-prediction model on the same test (REPRODUCE.md, "The final model's sale-prediction test")
+  # 1. complete sale histories since 1999: the county's Parcel Sales table, live queries, in three downloads
+  run $PY -I $S/parcel_sales.py --towns 77 73 76 74 31 11
+  run $PY -I $S/parcel_sales.py --towns 72 70
+  run $PY -I $S/parcel_sales.py --towns 10 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 32 33 34 35 36 37 38 39 71 75
+  # 2. the earlier sale-history model: preparations and its 76 fits (it supplies the flat fits of the 20 townships with
+  #    too few flats for a flat model of their own, the fitting order and a comparison column)
+  T38=(10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 70 71 72 73 74 75 76 77)
+  F18=(11 15 17 20 21 24 27 31 37 39 70 71 72 73 74 75 76 77)
+  run $PY -I $S/loop_prep.py --county --towns "${T38[@]}" --out public/data/v2/prep_county2025_h1 --salehist --seghist
+  run $PY -I $S/loop_prep.py --county --towns "${T38[@]}" --out public/data/v2/prep_county2025_h2h --scode --segment house --salehist
+  run $PY -I $S/loop_prep.py --county --towns "${F18[@]}" --out public/data/v2/prep_county2025_h2f --scode --segment flat \
+    --flat-nodes building --salehist
+  free_docker_memory
+  run $PY -I $S/salehist_county.py run --arm H2 > notes/v2/logs/salehist_county_h2.log 2>&1
+  run $PY -I $S/salehist_county.py eval --arm H2
+  # 3. the final model: preparations, 38 house fits and 18 flat fits, evaluation
+  run $PY -I $S/d77_county.py prep
+  run $PY -I $S/d77_county.py run > notes/v2/logs/d77_county_run.log 2>&1
+  run $PY -I $S/d77_county.py eval
+  run $PY -I $S/final_figures.py   # the README's by-township figure and price-index figure
+  run $PY -I $S/final_map.py       # the map at the top of the README
 }
 
 step_evaluate() {
@@ -124,6 +152,7 @@ step_evaluate() {
   run $PY -I $S/struct_convergence.py --model P
   run $PY -I $S/d38_level.py --structure      # correction made in advance
   run $PY -I $S/d38_unadjusted.py --structure
+  run $PY -I $S/d72_unrounded.py              # the headline: both models before rounding; rounded alike; in advance
   run $PY -I $S/equity_eval.py --structure    # PRD, published values, price deciles
   run $PY -I $S/equity_figure.py --structure
   cp notes/v2/figures/structure_equity_deciles.png public/figures/price_deciles.png

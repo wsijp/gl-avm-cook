@@ -4,7 +4,8 @@ This file lists the steps from the public inputs to the tables and figures of th
 commands, what each step does, how long it took us and what it needs; "Which README results are covered" below says
 which results they reproduce and which they do not. [`reproduce.sh`](reproduce.sh) runs the same steps:
 `public/reproduce.sh all` for the 1 January results (after preparing Docker's memory as described under "The
-Assessor's model"), `public/reproduce.sh county` for the sale-prediction test, or one step at a time by name.
+Assessor's model"), `public/reproduce.sh county` for the sale-prediction test of the published model,
+`public/reproduce.sh final` for the final sale-prediction model's test (after `county`), or one step at a time by name.
 
 ## What we used, and what you need first
 - **Hardware:** one Apple M5 laptop (10 cores, 32 GB of memory), macOS. Allow about 25 GB of free disk space, plus the
@@ -24,7 +25,9 @@ Assessor's model"), `public/reproduce.sh county` for the sale-prediction test, o
 
 ## Folder layout
 The Python and Stan code is exactly the code that produced the published results (only their comments were tidied
-for publication). The shell scripts (`reproduce.sh`, `assessor/rebuild.sh`, `assessor/run2025.sh`) run the commands
+for publication), with two exceptions: `parcel_sales.py` gained an `--out` option afterwards (its default is the
+folder we used), and the final model's figure scripts (`final_figures.py`, `final_map.py`) were written for this
+repository from the saved results. The shell scripts (`reproduce.sh`, `assessor/rebuild.sh`, `assessor/run2025.sh`) run the commands
 we ran, gathered for this release; `assessor/run2025.sh` repeats our 2025 run of the Assessor's model (same image,
 input and command) but was not itself used for it. The scripts expect to run from a working folder that holds this repository as a subfolder named `public`. Everything else is created beside it:
 
@@ -57,6 +60,14 @@ The scripts keep the labels used while the work was done. They mean:
 | `equity_` | regressivity measures and the published values |
 | `p2_`, `p3_`, `p4_`, `p7b_`, `p8_` prefixes; folders `prep_p7`, `prep_c8fix`, `prep_p8` | the stage of the work in which a script or folder was first written (`p3_`: checking sales and price index; `p4_`: the Assessor's values; `p8_`: the 2022 year). The folder names have no further meaning. |
 | `_ay2022`, `ay2022/` | assessment year 2022 |
+| `county2025_` | the sale-prediction test on the Assessor's 2025 split |
+| `loop_` (`loop_prep.py`, `loop_fit.py`, `loop_fold.py`, `stan/v2/gl_loop.stan`) | the sale-prediction model, the published model with optional terms, developed in a series of comparisons on earlier sales |
+| **H1** (`county2025_H1_t<code>`, `prep_county2025_h1`) | the published model fitted to houses and flats together, with sale-history indicators (one copy for houses, one for flats) |
+| **H2** (`H2h` houses, `H2f` flats; `salehist_county.py`, `prep_county2025_h2h`, `_h2f`) | the first sale-history version: separate house and flat models with each home's sale history since 2016 |
+| **IXa** (`IXah`, `prep_loop_ixah`; `d70_prep.py`) | the final house model: H2's houses with flip-purchase flags (`k1h`, `d63_prep.py`), neighbourhood-varying resale terms (`--np`), age interactions and the forecasting price index (`--forecast`) |
+| **FCf** (`prep_county_fcf`) | the final flat model: flats with sale history since 1999 (`--fullhist`), the fading premium (`--gexp`) and the forecasting price index |
+| `d77_county.py`, `county_d77/`, `county2025_ixa_eval/` | the final model's test (preparations, fits, evaluation) |
+| `salehist`, `salehist_full`, `parcel_sales` | sale histories: from the Assessor's 2025 file (since 2016) and from the county's Parcel Sales table (since 1999) |
 | township codes, e.g. `t28` | the Assessor's two-digit township codes (28 = Orland) |
 
 ## Steps
@@ -70,7 +81,8 @@ Times are wall-clock on the machine above.
 | 4 | `public/reproduce.sh assessor` | Rebuilds the Assessor's model for each year and runs it ([`assessor/rebuild.sh`](assessor/rebuild.sh); details and memory needs below), then compares our rebuild with the published values. | about 1 hour plus downloads |
 | 5 | `public/reproduce.sh fit` | Fits the GL model in each of the 30 townships (17 for 2023, 13 for 2022), at most three at a time, and values every home at 1 January (`scripts/v2/struct_run.py`, calling `fit_struct.py` and `value_v2.py`). | about 1 hour 40 minutes (4 hours of fitting in total) |
 | 6 | `public/reproduce.sh evaluate` | Every measure and interval of the 1 January tests in the README, both years, their figures in `public/figures/`, and the remaining 1 January numbers. | about 30 minutes |
-| 7 | `public/reproduce.sh county` (optional, not part of `all`; after steps 1 and 3) | The sale-prediction test: runs the Assessor's 2025 model, fits the GL in all 38 townships and predicts the test sales, then the README's sale-prediction table, the by-township figure and the map at the top (see "The sale-prediction test"). | about 3½ hours (3 h 26 min of fitting at three at a time) |
+| 7 | `public/reproduce.sh county` (optional, not part of `all`; after steps 1 and 3) | The sale-prediction test of the published model: runs the Assessor's 2025 model, fits the published GL in all 38 townships and predicts the test sales, then its table and by-township figure (see "The sale-prediction test"). | about 3½ hours (3 h 26 min of fitting at three at a time) |
+| 8 | `public/reproduce.sh final` (optional; after step 7) | The final model's sale-prediction test: downloads the Parcel Sales table, prepares the sale histories, fits the first sale-history version (which the final model reuses), then the final model's 56 fits, the README's sale-prediction table, its two figures and the map at the top (see "The final model's sale-prediction test"). | about 22 hours (6 h + 16 h of fitting at three at a time) |
 
 `all` runs steps setup and 1–6. The `assessor` step runs the 2022 assess stage straight after the others, so with
 `all` give the Docker machine the larger memory and swap described under "The Assessor's model" before you start (or
@@ -85,7 +97,8 @@ run the steps one by one). Beyond `all`:
   ```
   The pooled GL − rebuild MdAPE difference is in `public/runs/v2/struct_eval/chosen_seed2/ratio_pooled_primary.json`
   (pair `gl-assessor`: −0.976); the first seed's is in `chosen/ratio_pooled_primary.json` (−0.974).
-- **The sale-prediction test:** `public/reproduce.sh county`; see "The sale-prediction test" below.
+- **The sale-prediction tests:** `public/reproduce.sh county`, then `public/reproduce.sh final`; see "The sale-prediction
+  test" and "The final model's sale-prediction test" below.
 - **Not included in this repository:** the sale-history check of the README ("Further checks"; 17 further fits on
   training data with the selected homes' earlier sales removed) and the number-of-flats variant mentioned under the
   multi-family results. Their numbers cannot be reproduced from this release.
@@ -104,11 +117,12 @@ and the Assessor's 2022 training filter):
 
 Step 6 in detail: `struct_chosen.py --model P` (the headline measures, calling `ratio_v2.py`, which computes every
 measure and interval), `struct_convergence.py`, `d38_level.py` and `d38_unadjusted.py` (the correction made in advance,
-with and without time adjustment), `equity_eval.py` and `equity_figure.py` (the published values, PRD and PRB, the
+with and without time adjustment), `d72_unrounded.py` (the headline comparison with both models' values before
+rounding, the rounded-alike comparison and the correction in advance on unrounded values), `equity_eval.py` and `equity_figure.py` (the published values, PRD and PRB, the
 decile figure), `readme_figures.py`, `readme_numbers.py` and `fig_location_map.py --set assessment` (the map of the 1 January fits,
 `figures/location_map_assessment.png`; it downloads about 70 OpenStreetMap tiles once, into
-`public/data/v2/osm_tiles/`). The README's sale-prediction test, its by-township figure and the whole-county map at
-the top come from step 7 (`county`), below.
+`public/data/v2/osm_tiles/`). The README's sale-prediction results, its figures and the whole-county map at the top
+come from steps 7 (`county`) and 8 (`final`), below.
 
 ## The sale-prediction test
 `public/reproduce.sh county` runs, after `download` (which also fetches the 2025 input), `opendata` and `data` (`data`
@@ -135,18 +149,59 @@ needs the open-data files and builds the census-block units the county step reus
    written it runs on macOS only.
 4. `scripts/v2/county2025_eval.py`: both models' MdAPE, median ratio, COD and PRD and the paired 90% intervals, in
    `public/runs/v2/county2025_eval/summary.csv` and `summary.json` (per-township convergence in `convergence.csv`).
-   Then `county2025_figure.py` (the by-township figure, copied to `public/figures/county_by_township.png`) and
-   `fig_location_map.py --set county2025` (the map at the top, `public/figures/location_map.png`).
+   Then `county2025_figure.py` (the by-township figure, copied to `public/figures/county_by_township.png`, linked
+   from the README's details). (`fig_location_map.py --set county2025` draws the same kind of map from these fits; the
+   README's map now comes from the final model, step 8.)
 
 `county2025_run.py` and `county2025_eval.py` gained options after our run (for further tests not in this
 repository); their defaults, which `reproduce.sh` uses, run the published test unchanged.
+
+## The final model's sale-prediction test
+`public/reproduce.sh final` runs after `county` (it reuses the county step's split, census-block placement, the
+Assessor's 2025 predictions and the published model's results). Fits run at most three at a time, each under `nice`,
+with the same memory rule as the county step (macOS only as written). Times are ours on the M5:
+1. `scripts/v2/parcel_sales.py`, three times: the county's Parcel Sales table (all classes, dates from 1999 on; buyer
+   and seller names are not requested) for the 38 townships, in the three downloads our scripts read
+   (`public/data/v2/parcel_sales/sales_t<codes>.parquet`, with a `.json` record of each query). A live query: see
+   "Live downloads". The largest download (30 townships, 1.46 million records) took us 5½ minutes.
+2. `scripts/v2/loop_prep.py --county`, three times: the preparations of the first sale-history version (`prep_county2025_h1`,
+   `_h2h`, `_h2f`): the Assessor's split, each sale's history from the 2025 file strictly before its date, the coding of
+   the characteristics for houses and flats separately, and the flat buildings' graph. About 3 minutes each.
+3. `scripts/v2/salehist_county.py run --arm H2`, then `eval --arm H2`: the first sale-history version's 76 fits (38
+   house fits, 18 flat fits, and 20 joint fits whose flats the final model reuses), and its evaluation. About 6 hours
+   for us (17.8 hours of fitting in all). The final step needs these fits: the 20 joint fits value the flats of
+   the townships with too few flat sales, the house and flat fits' runtimes order the final fits, and their predictions
+   are a comparison column of the final evaluation.
+4. `scripts/v2/d77_county.py prep`: the final house preparations (the first version's houses plus the flip-purchase
+   flags, `d63_prep.py`, and the age interactions, `d70_prep.py`) and the final flat preparations (`loop_prep.py
+   --county --fullhist long --gapcode exp`: sale history since 1999). Under a minute.
+5. `scripts/v2/d77_county.py run`: the final model's 56 fits (`loop_fit.py --county`; 38 house fits
+   `county2025_IXah_t<code>` with `--forecast --np`, 18 flat fits `county2025_FCf_t<code>` with `--forecast --gexp`;
+   four chains of 1,000 + 1,000 iterations, seed 1). 15 hours 53 minutes for us (47.4 hours of fitting in all; Lake's
+   house fit alone 11.2 hours, West Chicago's flats 4.3, Jefferson's houses 4.9).
+6. `scripts/v2/d77_county.py eval`: both models' measures and the paired intervals, as in the county step
+   (`public/runs/v2/county2025_ixa_eval/summary.csv`), the sale-history groups (`salehist.md`), houses and flats and
+   the comparisons with the earlier versions (`d77.md`, `d77_groups.csv`), and the usefulness bar (`d77.json`). A few
+   minutes.
+7. `scripts/v2/final_figures.py` (the README's by-township and price-index figures) and `scripts/v2/final_map.py` (the
+   map at the top). The map rebuilds each house fit's block effects from its saved chains (`chains/*.csv`) and checks
+   that the rebuild reproduces every test sale's fitted October 2023 value; about 2 minutes.
+
+The first sale-history version's fits (step 3) were made on 20–21 October 2026 with earlier versions of `loop_prep.py`,
+`loop_fit.py` and `gl_loop.stan`; the released versions added options and kept the earlier ones' code paths, but we have
+not refitted step 3 with them. Rebuilt with the released `loop_prep.py`, step 2's three preparations were identical to
+ours in every data file (only the manifests' option lists and script hashes differ). The final model's preparations and
+fits (steps 4–6) were made with the released code. `d63_prep.py` and `d70_prep.py` copy a paragraph of their own
+description into each preparation's `coding.json`; the released descriptions were reworded for publication, so those
+notes (and the file hashes) differ from ours, not the data.
 
 ## Where each published number is written
 All under `public/runs/v2/`:
 
 | README item | file |
 |---|---|
-| MdAPE, median ratio, COD, PRD of the GL and our rebuild; GL − rebuild differences; subgroups (multi-family, earlier sale), townships | `struct_eval/chosen/ratio_<year>_primary.json` (`overall`, `subgroups`, `by_town`, `own_sale_gap`) |
+| **1 January headline, both models before rounding**: MdAPE, median ratio, COD, PRD, GL − rebuild differences, subgroups (multi-family, earlier sale), townships (Oak Park); rounded alike; corrected in advance (unrounded); without time adjustment; without Bloom and Thornton | `struct_eval/chosen/d72/summary.json`, `d72/ratio_<year>_primary.json` (unrounded), `d72/ratio_<year>_rounded.json`, `d72/ratio_<year>_unadjusted.json`, `d72/ratio_2023_excl_12_37.json` |
+| the same against the rebuild's rounded values (the comparison used before 22 October 2026; the three figures still drawn that way) | `struct_eval/chosen/ratio_<year>_primary.json` (`overall`, `subgroups`, `by_town`, `own_sale_gap`) |
 | corrected in advance with time adjustment; level-free | `struct_eval/chosen/d38/summary.json` |
 | corrected in advance without time adjustment | `struct_eval/chosen/d38/unadjusted.json` |
 | published values: all measures, GL − published, PRB, deciles | `struct_eval/chosen/equity/summary.json`, `deciles_<year>.csv` |
@@ -154,15 +209,21 @@ All under `public/runs/v2/`:
 | single-family IAAO measures; without Bloom and Thornton; exact matches with the published values | `struct_eval/chosen/readme_numbers.json` |
 | convergence (R-hat, divergent transitions) | `struct_eval/convergence_P.json`, `.csv` |
 | the simpler model (optional) | `struct_eval/selection.json` |
-| sale-prediction test: MdAPE, median ratio, COD, PRD, differences and intervals (county, City, suburbs, townships, horizons, earlier sale, level-free) | `county2025_eval/summary.csv`, `summary.json` |
-| sale-prediction test: convergence, runtimes | `county2025_eval/convergence.csv`, `runs.json` |
+| sale-prediction test of the published model: MdAPE, median ratio, COD, PRD, differences and intervals (county, City, suburbs, townships, horizons, earlier sale, level-free) | `county2025_eval/summary.csv`, `summary.json` |
+| sale-prediction test of the published model: convergence, runtimes | `county2025_eval/convergence.csv`, `runs.json` |
+| final model's sale-prediction test: MdAPE, median ratio, COD, PRD, differences and intervals (county, City, suburbs, townships, horizons, level-free, without flagged townships) | `county2025_ixa_eval/summary.csv`, `summary.json` |
+| final model: houses and flats, old never-sold Chicago houses, comparison with the earlier versions, usefulness bar | `county2025_ixa_eval/d77.md`, `d77_groups.csv`, `d77.json` |
+| final model: homes sold before or not, gaps since the previous sale | `county2025_ixa_eval/salehist.md`, `salehist.csv` |
+| final model: convergence, runtimes, sources of each township's predictions | `county2025_ixa_eval/convergence.csv`, `runs.json`; each fit's `report.json` |
 
 ## Which README results are covered
 | README result | command | covered |
 |---|---|---|
-| Sale-prediction test: table, county / Chicago / suburbs, township results, diagnostics, convergence | `reproduce.sh county` | yes |
-| By-township figure (`figures/county_by_township.png`) | `reproduce.sh county` | yes |
-| Map at the top (`figures/location_map.png`) | `reproduce.sh county` | yes |
+| Sale-prediction test: table, county / Chicago / suburbs, township results, diagnostics, convergence, usefulness bar | `reproduce.sh final` (after `county`) | yes |
+| Figures `final_by_township.png`, `final_price_index.png` and the map at the top (`location_map.png`) | `reproduce.sh final` | yes |
+| The published model on the sale-prediction test (+1.10 points) and its figure `county_by_township.png` | `reproduce.sh county` | yes |
+| The first sale-history version (+0.59 points) | `reproduce.sh final` (step 3) | yes |
+| The second, boosted correction model tried and not adopted | none | no: scripts not included |
 | 1 January tests: accuracy, level, uniformity, regressivity, intervals, both years | `reproduce.sh all` (`evaluate`) | yes |
 | Corrected in advance; level-free; without time adjustment | `reproduce.sh all` (`evaluate`) | yes |
 | Published values, PRB, price deciles, IAAO measures, multi-family and earlier-sale subgroups | `reproduce.sh all` (`evaluate`) | yes |
@@ -186,6 +247,12 @@ values were identical to ours. Not tested from a fresh copy: the downloads and l
 2023 and 2022 and the 2025 run (`assessor/`), the full fits, `evaluate`, and the `county` step. The Python scripts and
 the model file are the ones that produced the results; the shell wrappers (`reproduce.sh`, `assessor/rebuild.sh`,
 `assessor/run2025.sh`) were assembled for this repository from the commands we ran and have not been run end to end.
+
+For the final model's step (`final`): from a fresh copy of this repository we ran the Parcel Sales download for one
+township (River Forest, `--towns 33`, into a separate folder): its 6,498 records were identical to ours, and the sale
+histories built from it were identical to ours for all 90 of River Forest's test sales. The step's preparations of the
+first sale-history version, rebuilt with the released code, were identical to ours (see "The final model's
+sale-prediction test"). Not tested: the `final` step end to end, and its fits from a fresh copy.
 ## The Assessor's model
 `public/assessor/rebuild.sh <year>` does, for 2023 and for 2022:
 1. **fetch:** clones [ccao-data/model-res-avm](https://github.com/ccao-data/model-res-avm) at the tag
@@ -228,8 +295,9 @@ with the Assessor's published values: `readme_numbers.json` reports the share of
 10 × the published assessed value exactly (72.0% in 2023 and 76.1% in 2022 for us).
 
 ## Live downloads
-The parcel sales and published values are live queries of the county's open data portal, which can change. Ours were
-fetched on 18 October 2026 (Australian Eastern Daylight Time); each fetch also writes a `.json` record of its query,
+The parcel sales and published values are live queries of the county's open data portal, which can change. The first four
+were fetched on 18 October 2026 (Australian Eastern Daylight Time), the Parcel Sales files of the final model on the
+dates shown; each fetch also writes a `.json` record of its query,
 time, row count and sha256:
 
 | file (in `public/data/v2/`) | rows | sha256 |
@@ -238,6 +306,9 @@ time, row count and sha256:
 | `p4_published_2023_south.parquet` | 527,671 | `fbb7eeb0a1ff6a4f04adf59e998bc5497581a75d1fa0cdf4a3e5268ac43141e2` |
 | `ay2022/p8_opendata_sales_2022.parquet` | 101,398 | `95143eda9171b59f7f9605b66605213de15dfa4aac7fcad17b2f1b7e2442c62f` |
 | `ay2022/p8_published_2022_north.parquet` | 453,915 | `54991a902250df86d106934d8fb70816eeab37f976c58481ea1c23be21fe16a0` |
+| `parcel_sales/sales_t77-73-76-74-31-11.parquet` (fetched 2026-10-20 UTC) | 816,129 | `2b4202aab649e33b251a7a4755e586198f5e4b5e0bd93f9d3d1888cba971fddc` |
+| `parcel_sales/sales_t72-70.parquet` (fetched 2026-10-21 UTC) | 412,245 | `aa6c550470921a603bf7cb62222b90b6a4979508805a0649adb6fae21d33ee7e` |
+| `parcel_sales/sales_t10-12-13-14-15-16-17-18-19-20-21-22-23-24-25-26-27-28-29-30-32-33-34-35-36-37-38-39-71-75.parquet` (fetched 2026-10-23 UTC) | 1,460,437 | `9e42d161322c9452f0fbd54ea535673501a1ac520abeef12715b23fa32a42866` |
 
 **An exact reproduction of our sample and results is therefore not guaranteed:** if a fresh fetch differs from ours
 (compare its sha256 with the table), the results may differ too, and we cannot bound by how much. We do not

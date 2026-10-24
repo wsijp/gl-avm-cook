@@ -74,7 +74,7 @@ We compare GL with the Assessor’s model in two settings: predicting later sale
 | **1 January assessment, north suburbs,** 2022 | GL published model | 10,825 | 9.52 | 0.993 | 12.9 | 1.032 |
 | | Assessor, our rebuild | | 9.86 | 0.967 | 13.2 | 1.031 |
 
-Compare models within each test; the tests use different sales, dates, models and evaluation rules. In the sale-prediction test, values are compared with the prices actually paid; in the 1 January tests, with sale prices adjusted to 1 January, and both models’ values before rounding. Chicago and the suburbs are parts of the county row, not further tests. The 1 January tests use the published GL model; the sale-prediction test uses the final sale-prediction model.
+Compare models within each test; the tests use different sales, dates, models and evaluation rules. In the sale-prediction test, values are compared with the prices actually paid; in the 1 January tests, with sale prices adjusted to 1 January, and both models’ values before rounding. Chicago and the suburbs are parts of the county row, not further tests. The 1 January tests use the published GL model; the sale-prediction test uses the GL sale-prediction model.
 
 ### Predicting sales across Cook County
 
@@ -135,7 +135,7 @@ The areas are the parts of the county the Assessor revalued in each year: 17 tow
 
 **Convergence.** All 56 fits finished at the first attempt. Two townships are flagged by the rule fixed before the test: Lake View, whose flat model’s resale-premium curve did not mix (one chain stuck; R-hat 1.28; 30% of Lake View’s test predictions have R-hat above 1.01), and Northfield, whose flats come from the reused joint fit (R-hat 1.11). Without both, the difference is −0.96 county-wide, −0.39 in Chicago and −1.41 in the suburbs. Lake’s house fit mixed (R-hat 1.006), but 25% of its iterations reached the sampler’s maximum tree depth. The sampler reported 548 divergent transitions across most townships, a sign of difficult geometry.
 
-**The published model on the same test.** Fitted unchanged (one model for houses and flats, the previous-sale count as a regressor, price paths held at October 2023), the published GL model’s MdAPE was 15.11% against the Assessor’s 14.01%: +1.10 points [+0.96, +1.23], +2.13 in Chicago and +0.36 in the suburbs ([by township](figures/county_by_township.png)). It is reproduced by `public/reproduce.sh county`, which the final model’s step needs first.
+**The published model on the same test.** Fitted unchanged (one model for houses and flats, the previous-sale count as a regressor, price paths held at October 2023), the published GL model’s MdAPE was 15.11% against the Assessor’s 14.01%: +1.10 points [+0.96, +1.23], +2.13 in Chicago and +0.36 in the suburbs ([by township](figures/county_by_township.png)). It is reproduced by `public/reproduce.sh county`, which the sale-prediction model’s step needs first.
 
 ### About the maps
 
@@ -171,7 +171,7 @@ Neither model was fitted to the evaluation sales.
 ### Public sources
 
 - **Model inputs:** the Assessor’s training sales, assessment rolls, groups of identical units and land rates, from its public bucket at `https://ccao-data-public-us-east-1.s3.amazonaws.com/models/inputs/res/<year>/<file>`. Inputs are downloaded for 2022, 2023 and 2025. In the 1 January tests, the 2025 training file supplies the later sales used for evaluation and the price index, and trains neither model. In the sale-prediction test it is the data: both models train on its earlier 90% and are tested on its latest 10%.
-- **Parcel sales:** [Assessor – Parcel Sales](https://datacatalog.cookcountyil.gov/d/wvhk-k5uv), used to exclude sales covering multiple parcels in the 1 January tests and, from 1999, for the sale histories of flats in the final sale-prediction model (dates only).
+- **Parcel sales:** [Assessor – Parcel Sales](https://datacatalog.cookcountyil.gov/d/wvhk-k5uv), used to exclude sales covering multiple parcels in the 1 January tests and, from 1999, for the sale histories of flats in the sale-prediction model (dates only).
 - **Published values:** [Assessor – Assessed Values](https://datacatalog.cookcountyil.gov/d/uzyt-m557), using the first-pass values mailed to owners. We multiply assessed values by 10 to put them on the market-value scale.
 - **Census blocks:** US Census Bureau TIGER/Line [2020 Illinois census blocks](https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_17_tabblock20.zip).
 - **Assessor model code:** [ccao-data/model-res-avm](https://github.com/ccao-data/model-res-avm), at tags `2023-assessment-year` and `2022-assessment-year` (1 January tests); for the sale-prediction test, the Assessor’s published container image of its 2025 model.

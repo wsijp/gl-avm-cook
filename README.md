@@ -62,6 +62,14 @@ We compare GL with the Assessor’s model in two settings: predicting later sale
 
 **In valuing homes at 1 January, the GL values sit at the right overall level and the Assessor’s about 3–4% low, which makes the GL somewhat more accurate than our rebuild of the Assessor’s model, by 0.3–0.4 percentage points when both are compared before rounding.** Once each model’s level is corrected in advance, there is no clear difference in typical error.
 
+### The tests
+
+| Test | What is valued | Training sales | Evaluation sales | Number of evaluation sales | Townships | Compared with |
+|---|---|---|---|---:|---|---|
+| Sale prediction, whole county | The price of each later sale, at its own month | January 2016 – 20 October 2023 | 20 October 2023 – 27 December 2024 | 38,177 | All 38: Chicago’s 8 and the 30 suburban | The Assessor’s 2025 model, trained on the same sales |
+| 1 January assessment, 2023 | Every eligible home at 1 January 2023 (336,532 homes) | 2014–2022 | January – December 2023, prices adjusted to 1 January | 11,356 | 17 south and west suburban | Our rebuild of the Assessor’s 2023 model, before rounding |
+| 1 January assessment, 2022 | Every eligible home at 1 January 2022 (280,424 homes) | 2013–2021 | January – December 2022, prices adjusted to 1 January | 10,825 | 13 north suburban | Our rebuild of the Assessor’s 2022 model, before rounding |
+
 ### Results at a glance
 
 - **MdAPE (median absolute percentage error):** the typical absolute gap between value and sale price, as a percentage of price; lower is better.
@@ -115,7 +123,7 @@ The two models do not use the same information. Both receive each home’s chara
 
 An assessor must value every home on the roll at a fixed date, 1 January in Cook County, before the year’s sales are known. We value the same homes (single-family houses, two- to six-flat buildings and town houses) at the same date, from the same published training data, as the Assessor’s model, and check both against sales later in the year. Our benchmark is our rebuild of the Assessor’s model from its public code and data; the values the Assessor published are compared in the details below.
 
-**As delivered, the GL values are somewhat more accurate than our rebuild of the Assessor’s model in both years.** Comparing both models’ values before rounding, their typical error is lower by 0.3–0.4 percentage points: 14.60% against 15.00% in 2023 (difference −0.40 points, 90% interval −0.66 to −0.11) and 9.52% against 9.86% in 2022 (−0.33, −0.54 to −0.18). The Assessor rounds its values down; with both models’ values rounded that way, the differences are −0.72 and −0.65 points (details below). What an assessor looks for:
+**As delivered, the GL values are somewhat more accurate than our rebuild of the Assessor’s model in both years.** Comparing both models’ values before rounding, their typical error is lower by 0.3–0.4 percentage points: 14.60% against 15.00% in 2023 (difference −0.40 points, 90% interval −0.66 to −0.11) and 9.52% against 9.86% in 2022 (−0.33, −0.54 to −0.17). The Assessor rounds its values down; with both models’ values rounded that way, the differences are −0.72 and −0.65 points (details below). What an assessor looks for:
 
 - **Level:** the GL values are at the right overall level (median ratio 0.99); our rebuild of the Assessor’s values is about 3–4% low before rounding (0.96–0.97) and about 5% low after it (0.94–0.95).
 - **Uniformity:** the GL values are slightly more uniform (COD lower by 0.8 points in 2023 and 0.2 in 2022).
@@ -199,7 +207,7 @@ The level correction of Part 2 comes in two versions. The one quoted there uses 
 
 ![Typical error before and after level correction](figures/accuracy_level.png)
 
-<p align="center"><sub>This figure still compares GL with the rebuild’s rounded values (the comparison used before 22 October 2026); it has not yet been redrawn with unrounded values.</sub></p>
+<p align="center"><sub>Typical error of GL and of our rebuild of the Assessor’s model, both before rounding: as delivered, corrected in advance (October–December prices time-adjusted) and level-free (after the fact). Right: GL minus rebuild, with 90% intervals; level-free, +0.22 points [−0.08, +0.43] in 2023 and +0.09 [−0.10, +0.30] in 2022.</sub></p>
 
 ### Model details
 
@@ -295,7 +303,7 @@ The IAAO’s *Standard on Ratio Studies* (2013) suggests a COD of 5.0–15.0 for
 
 ![Median ratio by sale-price decile](figures/price_deciles.png)
 
-<p align="center"><sub>This figure still compares GL with the rebuild’s rounded values (the comparison used before 22 October 2026); it has not yet been redrawn with unrounded values.</sub></p>
+<p align="center"><sub>Median ratio by decile of the time-adjusted sale price, with 90% intervals, for GL and our rebuild of the Assessor’s model, both before rounding, and for the Assessor’s published values, which exist only rounded down and are shown for reference.</sub></p>
 
 Grouping by sale price can exaggerate apparent regressivity because a home that happens to sell cheaply has both a low price and a high ratio. PRB is less affected because of its proxy. The shaded 0.90–1.10 band is IAAO guidance for overall appraisal level, shown for reference, rather than a standard for price groups.
 
@@ -307,7 +315,7 @@ Some townships favour the Assessor’s model, including Oak Park, where GL’s M
 
 ![GL minus rebuilt Assessor results by township](figures/by_township.png)
 
-<p align="center"><sub>This figure still compares GL with the rebuild’s rounded values (the comparison used before 22 October 2026); it has not yet been redrawn with unrounded values.</sub></p>
+<p align="center"><sub>GL minus our rebuild of the Assessor’s model, MdAPE by township, both before rounding, with pointwise 90% intervals; townships ordered by the difference.</sub></p>
 
 ### 1 January tests: published values and the rebuild
 

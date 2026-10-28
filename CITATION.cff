@@ -3,6 +3,7 @@ message: >-
   If you use this code, please cite the repository. For the model itself, please cite
   Sijp and Francke (2026), Real Estate Economics (the preferred citation below).
 title: "gl-avm-cook: valuing Cook County homes with a spatio-temporal hedonic model, compared with the Assessor's own model"
+doi: "10.5281/zenodo.23719978"
 repository-code: "https://github.com/wsijp/gl-avm-cook"
 type: software
 authors:

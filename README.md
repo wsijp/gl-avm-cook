@@ -1,5 +1,7 @@
 # An open house valuation model, validated on Cook County IL
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23719978.svg)](https://doi.org/10.5281/zenodo.23719978)
+
 This repository contains the code of the **GL model**, an open Bayesian house valuation model, and a comparison of it with the Cook County Assessor’s own valuation model in Cook County, Illinois.
 
 ![Value of a standard home per census block across Cook County, including Chicago](figures/location_map.png)
@@ -369,4 +371,4 @@ Exact reproduction is not guaranteed. Open-data queries are live and their conte
 
 ## How to cite
 
-For the model, cite Sijp and Francke (2026). For this code and its results, cite this repository. [`CITATION.cff`](CITATION.cff) holds both: GitHub’s “Cite this repository” button shows the model paper as the preferred citation, and the file also describes the repository itself.
+For the model, cite Sijp and Francke (2026). For this code and its results, cite this repository: Sijp, W. P. (2026), *gl-avm-cook*, Zenodo, [doi:10.5281/zenodo.23719978](https://doi.org/10.5281/zenodo.23719978) (this DOI always points to the latest version). [`CITATION.cff`](CITATION.cff) holds both: GitHub’s “Cite this repository” button shows the model paper as the preferred citation, and the file also describes the repository itself.

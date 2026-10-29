@@ -1,0 +1,202 @@
+{
+ "1 January 2023": {
+  "GL": {
+   "vei": -29.68,
+   "significance": 23.4,
+   "first_last_overlap": false,
+   "n": 11356,
+   "prd": 1.074,
+   "group_medians": [
+    1.2478,
+    0.9691,
+    1.0367,
+    0.9967,
+    0.9909,
+    0.9821,
+    0.96,
+    0.9799,
+    0.9786,
+    0.9545
+   ]
+  },
+  "Assessor": {
+   "vei": -38.59,
+   "significance": 32.29,
+   "first_last_overlap": false,
+   "n": 11356,
+   "prd": 1.078,
+   "group_medians": [
+    1.3321,
+    0.96,
+    0.9956,
+    0.9545,
+    0.9389,
+    0.9377,
+    0.9264,
+    0.9597,
+    0.9523,
+    0.9605
+   ]
+  }
+ },
+ "1 January 2022": {
+  "GL": {
+   "vei": -6.02,
+   "significance": null,
+   "first_last_overlap": false,
+   "n": 10825,
+   "prd": 1.032,
+   "group_medians": [
+    1.0098,
+    1.0051,
+    0.9968,
+    1.0011,
+    1.0037,
+    1.0021,
+    0.9912,
+    0.9815,
+    0.9937,
+    0.9499
+   ]
+  },
+  "Assessor": {
+   "vei": -5.44,
+   "significance": null,
+   "first_last_overlap": false,
+   "n": 10825,
+   "prd": 1.031,
+   "group_medians": [
+    0.991,
+    0.9794,
+    0.9749,
+    0.9847,
+    0.9767,
+    0.9606,
+    0.9559,
+    0.9511,
+    0.9578,
+    0.9384
+   ]
+  }
+ },
+ "County test, all": {
+  "GL": {
+   "vei": -29.12,
+   "significance": 26.65,
+   "first_last_overlap": false,
+   "n": 38177,
+   "prd": 1.077,
+   "group_medians": [
+    1.2298,
+    0.9829,
+    0.9746,
+    0.9803,
+    0.9804,
+    0.9924,
+    0.9874,
+    0.9733,
+    0.9572,
+    0.9439
+   ]
+  },
+  "Assessor": {
+   "vei": -41.46,
+   "significance": 39.02,
+   "first_last_overlap": false,
+   "n": 38177,
+   "prd": 1.087,
+   "group_medians": [
+    1.3216,
+    0.984,
+    0.9501,
+    0.9429,
+    0.9376,
+    0.9491,
+    0.938,
+    0.9314,
+    0.9225,
+    0.9277
+   ]
+  }
+ },
+ "County test, City": {
+  "GL": {
+   "vei": -38.52,
+   "significance": 33.94,
+   "first_last_overlap": false,
+   "n": 15677,
+   "prd": 1.098,
+   "group_medians": [
+    1.3431,
+    1.0263,
+    0.9183,
+    0.9206,
+    0.9501,
+    0.9716,
+    0.9788,
+    0.9609,
+    0.9673,
+    0.9674
+   ]
+  },
+  "Assessor": {
+   "vei": -63.2,
+   "significance": 58.58,
+   "first_last_overlap": false,
+   "n": 15677,
+   "prd": 1.127,
+   "group_medians": [
+    1.5498,
+    1.1028,
+    0.9473,
+    0.931,
+    0.9363,
+    0.9442,
+    0.9318,
+    0.913,
+    0.9377,
+    0.9405
+   ]
+  }
+ },
+ "County test, suburbs": {
+  "GL": {
+   "vei": -16.67,
+   "significance": 14.09,
+   "first_last_overlap": false,
+   "n": 22500,
+   "prd": 1.062,
+   "group_medians": [
+    1.0868,
+    1.0092,
+    0.9995,
+    0.9882,
+    0.9893,
+    0.9968,
+    0.9898,
+    0.9774,
+    0.96,
+    0.9227
+   ]
+  },
+  "Assessor": {
+   "vei": -18.86,
+   "significance": 16.21,
+   "first_last_overlap": false,
+   "n": 22500,
+   "prd": 1.059,
+   "group_medians": [
+    1.0927,
+    0.9681,
+    0.9515,
+    0.9436,
+    0.9445,
+    0.9481,
+    0.9383,
+    0.9382,
+    0.921,
+    0.9146
+   ]
+  }
+ }
+}

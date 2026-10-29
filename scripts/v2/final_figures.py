@@ -90,9 +90,9 @@ def by_township(out):
     for side in ["top", "right", "left"]:
         ax.spines[side].set_visible(False)
     ax.spines["bottom"].set_color(GRID)
-    ax.set_xlabel("MdAPE difference, GL minus Assessor (percentage points; below 0 = GL closer to the price)",
+    ax.set_xlabel("MdAPE difference, hedonic model minus Assessor's model, percentage points\nbelow 0: hedonic model closer to the price",
                   fontsize=8, color=INK2)
-    ax.set_title("GL minus Assessor's model, test sales Oct 2023 – Dec 2024, with 90% intervals",
+    ax.set_title("Hedonic model (sale prediction) minus Assessor's model\ntest sales Oct 2023 – Dec 2024, with 90% intervals",
                  fontsize=8.5, color=INK, loc="left")
     h = [plt.Line2D([], [], color=CITY_C, marker="o", lw=2, label="City of Chicago township"),
          plt.Line2D([], [], color=SUB_C, marker="s", lw=2, label="suburban township"),

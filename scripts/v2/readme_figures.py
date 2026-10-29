@@ -47,7 +47,7 @@ DAGGER = {"12", "37"}  # our rebuild of the Assessor's 2023 values differs most 
 D72 = REPO / "public/runs/v2/struct_eval/chosen/d72"
 EQ = REPO / "public/runs/v2/struct_eval/chosen/equity"
 YEARS = [("2023", "2023, south and west suburbs"), ("2022", "2022, north suburbs")]
-ASS = "Assessor (our rebuild, before rounding)"
+ASS = "Assessor's model (our rebuild, before rounding)"
 
 
 def study(y):
@@ -85,7 +85,7 @@ def by_township():
         a.axvline(0, color=MUTED, lw=1)
         a.set_xlim(-5, 10.5 if STRUCT else 9)
         a.set_title(title, fontsize=10, loc="left")
-        a.set_xlabel("GL − Assessor (our rebuild), MdAPE points (90% interval)\nbelow zero: GL more accurate")
+        a.set_xlabel("Hedonic model − our rebuild, MdAPE points (90% interval)\nbelow zero: hedonic model more accurate")
         a.grid(axis="x", color="#e7e6e1", lw=0.8)
         a.spines[["top", "right", "left"]].set_visible(False)
         a.tick_params(axis="y", length=0)
@@ -114,7 +114,7 @@ def accuracy_level(data):
     fig, ax = plt.subplots(1, 3, figsize=(12.5, 3.9), gridspec_kw=dict(width_ratios=[1, 1, 1.2]))
     for k, (y, title) in enumerate(YEARS):
         a = ax[k]
-        for j, col, lab in [(0, BLUE, "GL"), (1, ORANGE, ASS)]:
+        for j, col, lab in [(0, BLUE, "Hedonic model (published)"), (1, ORANGE, ASS)]:
             a.plot(range(3), [r[j] for r in res[y]], color=col, lw=2, marker="o", ms=8, mec=SURFACE, mew=2, label=lab)
         a.set_xticks(range(3), [v[0] for v in versions])
         a.set_title(title, fontsize=9.5, loc="left")
@@ -132,8 +132,8 @@ def accuracy_level(data):
                        label=title if j == 0 else None)
     a.axhline(0, color=MUTED, lw=1)
     a.set_xticks(range(3), [v[0] for v in versions])
-    a.set_ylabel("GL − Assessor, MdAPE points\n(90% interval)")
-    a.set_title("Difference (below zero: GL more accurate)", fontsize=9.5, loc="left")
+    a.set_ylabel("Hedonic model − Assessor's model,\nMdAPE points (90% interval)")
+    a.set_title("Difference (below zero: hedonic model more accurate)", fontsize=9.5, loc="left")
     a.spines[["top", "right"]].set_visible(False)
     a.grid(axis="y", color="#e7e6e1", lw=0.8)
     a.legend(frameon=False, loc="lower right")
@@ -143,8 +143,8 @@ def accuracy_level(data):
 
 def price_deciles(data):
     """Median ratio by sale-price decile: GL, the Assessor's model before rounding, published values (rounded)."""
-    series = [("gl", "GL", BLUE, "o"), ("assfin", ASS, ORANGE, "s"),
-              ("published", "Assessor, published (rounded)", GREEN, "^")]
+    series = [("gl", "Hedonic model (published)", BLUE, "o"), ("assfin", ASS, ORANGE, "s"),
+              ("published", "Assessor's published values (rounded)", GREEN, "^")]
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.6), sharey=True)
     top = 1.60
     for ax, (y, title) in zip(axes, YEARS):

@@ -6,6 +6,8 @@ which results they reproduce and which they do not. [`reproduce.sh`](reproduce.s
 `public/reproduce.sh all` for the 1 January results (after preparing Docker's memory as described under "The
 Assessor's model"), `public/reproduce.sh county` for the sale-prediction test of the published model,
 `public/reproduce.sh final` for the final sale-prediction model's test (after `county`), or one step at a time by name.
+The model is a Bayesian spatio-temporal hedonic model (Sijp and Francke, 2026; the 'GL' model in that paper, after the
+graph Laplacian it uses), called "the hedonic model" below; the file and script names keep the short name `gl`.
 
 ## What we used, and what you need first
 - **Hardware:** one Apple M5 laptop (10 cores, 32 GB of memory), macOS. Allow about 25 GB of free disk space, plus the
@@ -58,7 +60,7 @@ The scripts keep the labels used while the work was done. They mean:
 
 | label | meaning |
 |---|---|
-| model **P** (`struct_P_t<code>`, `--model P`) | the published GL model |
+| model **P** (`struct_P_t<code>`, `--model P`) | the published hedonic model |
 | model **S** (`struct_S_t<code>`) | the simpler model without neighbourhood effects (not used) |
 | `struct_` | the model structure in which every effect sums to zero (`fit_struct.py`, `stan/v2/gl_struct.stan`) |
 | `d38_` | the correction made in advance |
@@ -84,9 +86,9 @@ Times are wall-clock on the machine above.
 | 2 | `public/reproduce.sh opendata` | Queries the Cook County open data portal for the parcel sales of 2023 and 2022 and the Assessor's published values (see "Live downloads" below). | a few minutes |
 | 3 | `public/reproduce.sh data` | For each year: the valued homes, the census blocks and their map, the sales used to check accuracy, the price index and the time adjustment, and one prepared folder per township (data and characteristic coding). | about 10 minutes |
 | 4 | `public/reproduce.sh assessor` | Rebuilds the Assessor's model for each year and runs it ([`assessor/rebuild.sh`](assessor/rebuild.sh); details and memory needs below), then compares our rebuild with the published values. | about 1 hour plus downloads |
-| 5 | `public/reproduce.sh fit` | Fits the GL model in each of the 30 townships (17 for 2023, 13 for 2022), at most three at a time, and values every home at 1 January (`scripts/v2/struct_run.py`, calling `fit_struct.py` and `value_v2.py`). | about 1 hour 40 minutes (4 hours of fitting in total) |
+| 5 | `public/reproduce.sh fit` | Fits the hedonic model in each of the 30 townships (17 for 2023, 13 for 2022), at most three at a time, and values every home at 1 January (`scripts/v2/struct_run.py`, calling `fit_struct.py` and `value_v2.py`). | about 1 hour 40 minutes (4 hours of fitting in total) |
 | 6 | `public/reproduce.sh evaluate` | Every measure and interval of the 1 January tests in the README, both years, their figures in `public/figures/`, and the remaining 1 January numbers. | about 30 minutes |
-| 7 | `public/reproduce.sh county` (optional, not part of `all`; after steps 1 and 3) | The sale-prediction test of the published model: runs the Assessor's 2025 model, fits the published GL in all 38 townships and predicts the test sales, then its table and by-township figure (see "The published model's sale-prediction test"). | about 3½ hours (3 h 26 min of fitting at three at a time) |
+| 7 | `public/reproduce.sh county` (optional, not part of `all`; after steps 1 and 3) | The sale-prediction test of the published model: runs the Assessor's 2025 model, fits the published hedonic model in all 38 townships and predicts the test sales, then its table and by-township figure (see "The published model's sale-prediction test"). | about 3½ hours (3 h 26 min of fitting at three at a time) |
 | 8 | `public/reproduce.sh final` (optional; after step 7) | The sale-prediction model's test: downloads the Parcel Sales table, prepares the sale histories, fits the first sale-history version (which the sale-prediction model reuses), then the sale-prediction model's 56 fits, the README's sale-prediction table, its two figures and the map at the top (see "The sale-prediction model's test"). | about 22 hours (6 h + 16 h of fitting at three at a time) |
 
 `all` runs steps setup and 1–6. The `assessor` step runs the 2022 assess stage straight after the others, so with
@@ -100,7 +102,7 @@ run the steps one by one). Beyond `all`:
   .venv/bin/python -I public/scripts/v2/struct_run.py --models P --seed 2 --suffix _seed2
   .venv/bin/python -I public/scripts/v2/struct_chosen.py --model P --runs runs_seed2.json --tag _seed2
   ```
-  The pooled GL − rebuild MdAPE difference is in `public/runs/v2/struct_eval/chosen_seed2/ratio_pooled_primary.json`
+  The pooled MdAPE difference, hedonic model − rebuild, is in `public/runs/v2/struct_eval/chosen_seed2/ratio_pooled_primary.json`
   (pair `gl-assessor`: −0.976); the first seed's is in `chosen/ratio_pooled_primary.json` (−0.974).
 - **The sale-prediction tests:** `public/reproduce.sh county`, then `public/reproduce.sh final`; see "The published model's
   sale-prediction test" and "The sale-prediction model's test" below.
@@ -132,7 +134,7 @@ come from steps 7 (`county`) and 8 (`final`), below.
 ## The published model's sale-prediction test
 `public/reproduce.sh county` runs, after `download` (which also fetches the 2025 input), `opendata` and `data` (`data`
 needs the open-data files and builds the census-block units the county step reuses), so from a fresh working folder:
-`public/reproduce.sh setup download opendata data county`. It stops the Docker machine (colima) before the GL fits:
+`public/reproduce.sh setup download opendata data county`. It stops the Docker machine (colima) before the hedonic model's fits:
 1. `public/assessor/run2025.sh`: clones the Assessor's code at the tag `2025-assessment-year` (commit
    `f292e7b3a31cd01df5950b3b6bc54e848666a33c`) into `ccao/model-res-avm-2025/`, places the 2025 input in its `input/`
    folder, pulls the Assessor's own image for that tag pinned by digest
@@ -205,11 +207,11 @@ All under `public/runs/v2/`:
 
 | README item | file |
 |---|---|
-| **1 January headline, both models before rounding**: MdAPE, median ratio, COD, PRD, GL − rebuild differences, subgroups (multi-family, earlier sale), townships (Oak Park); rounded alike; corrected in advance (unrounded); without time adjustment; without Bloom and Thornton | `struct_eval/chosen/d72/summary.json`, `d72/ratio_<year>_primary.json` (unrounded), `d72/ratio_<year>_rounded.json`, `d72/ratio_<year>_unadjusted.json`, `d72/ratio_2023_excl_12_37.json` |
-| the same against the rebuild's rounded values (the comparison used before 22 October 2026; the three figures still drawn that way) | `struct_eval/chosen/ratio_<year>_primary.json` (`overall`, `subgroups`, `by_town`, `own_sale_gap`) |
+| **1 January headline, both models before rounding**: MdAPE, median ratio, COD, PRD, hedonic model − rebuild differences, subgroups (multi-family, earlier sale), townships (Oak Park); rounded alike; corrected in advance (unrounded); without time adjustment; without Bloom and Thornton | `struct_eval/chosen/d72/summary.json`, `d72/ratio_<year>_primary.json` (unrounded), `d72/ratio_<year>_rounded.json`, `d72/ratio_<year>_unadjusted.json`, `d72/ratio_2023_excl_12_37.json` |
+| the same against the rebuild's rounded values (the comparison used before 22 October 2026; the figures used it until 25 October) | `struct_eval/chosen/ratio_<year>_primary.json` (`overall`, `subgroups`, `by_town`, `own_sale_gap`) |
 | corrected in advance with time adjustment; level-free | `struct_eval/chosen/d38/summary.json` |
 | corrected in advance without time adjustment | `struct_eval/chosen/d38/unadjusted.json` |
-| published values: all measures, GL − published, PRB, deciles | `struct_eval/chosen/equity/summary.json`, `deciles_<year>.csv` |
+| published values: all measures, hedonic model − published, PRB, deciles | `struct_eval/chosen/equity/summary.json`, `deciles_<year>.csv` |
 | without time adjustment ("roughly doubles") | `struct_eval/chosen/ratio_<year>_unadjusted.json` |
 | single-family IAAO measures; without Bloom and Thornton; exact matches with the published values | `struct_eval/chosen/readme_numbers.json` |
 | convergence (R-hat, divergent transitions) | `struct_eval/convergence_P.json`, `.csv` |
@@ -320,7 +322,7 @@ time, row count and sha256:
 redistribute our copies (we found no licence stated for them).
 
 ## What to expect
-- **Sampler settings**, the same for every GL fit: four chains of 1,000 warm-up and 1,000 sampling iterations, seed 1
+- **Sampler settings**, the same for every fit of the hedonic model: four chains of 1,000 warm-up and 1,000 sampling iterations, seed 1
   (seed 2 for the second-seed check), Stan's default NUTS settings (target acceptance 0.8, maximum tree depth 10).
   The published model's chains all start from the posterior mode found by optimisation (`fit_struct.py`,
   `county2025_fit.py`); the sale-prediction model's and the first sale-history version's chains start from that mode,

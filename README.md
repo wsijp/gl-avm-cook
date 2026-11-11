@@ -8,7 +8,7 @@ This repository contains the code of an open house valuation model, a Bayesian s
 
 <p align="center"><sub>Value of one standard house by census block across Cook County in October 2023, estimated by the hedonic model for sale prediction (<a href="#about-the-maps">about the maps</a>).</sub></p>
 
-*Status: results are preliminary. Updated in October 2026 with the sale-prediction model.*
+*The comparison with the Assessor’s model is reported in the companion paper, Sijp (2026), [“Must Accurate Automated Home Valuations Be Hard to Explain? Evidence from Cook County”](https://doi.org/10.2139/ssrn.7684524), SSRN working paper, November 2026. The figures below are the paper’s.*
 
 ## Part 1: the hedonic model and its code
 
@@ -23,7 +23,7 @@ The repository has two versions of the model. The **published model** above valu
 - **Time:** the month of sale.
 - **For sale prediction, also:** the dates of the home’s earlier sales, never their prices. Houses and flats have separate models; house age effects vary by property class and size.
 
-The code can be fitted to other housing markets with sales, home characteristics and a spatial layout. A [related working paper (Sijp 2026, SSRN)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7345003) compares the hedonic model with machine-learning models on Sydney house sales.
+The code can be fitted to other housing markets with sales, home characteristics and a spatial layout. An earlier [working paper (Sijp 2026, “Scale and Local Information in Housing Markets”, SSRN)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7345003) compares the hedonic model with machine-learning models on Sydney house sales.
 
 ### Getting started
 
@@ -47,7 +47,7 @@ On an Apple M5 laptop with 32 GB of memory, running three townships at a time, t
 | [`stan/v2/gl_loop.stan`](stan/v2/gl_loop.stan) | The hedonic model for sale prediction (the published model with optional terms) |
 | [`scripts/v2/`](scripts/v2/) | Python scripts for data preparation, fitting, valuation, evaluation and figures |
 | [`scripts/v2/ay2022/`](scripts/v2/ay2022/) | Preparation and valuation scripts adapted for 2022 |
-| [`paper/`](paper/) | Scripts that compute the paper’s tables from the stored results, and their outputs |
+| [`paper/`](paper/) | Scripts that compute the companion paper’s results table, its table of the evaluation sales and its figure of ratios by price group from the stored results, and their outputs |
 | [`assessor/`](assessor/) | Dockerfiles and the script that fetches and runs the Assessor’s model |
 | [`figures/`](figures/) | Results figures |
 | [`reproduce.sh`](reproduce.sh) | Runs the reproduction steps |
@@ -94,7 +94,7 @@ We compare the hedonic model with the Assessor’s model in two settings: predic
 | **1 January assessment, north suburbs,** 2022 | Hedonic model (published) | 10,825 | 9.52 | 0.993 | 12.9 | 1.032 |
 | | Assessor’s model, our rebuild | | 9.86 | 0.967 | 13.2 | 1.031 |
 
-These figures, their differences and the 90% intervals are those of the paper; [`paper/table2.py`](paper/table2.py) computes them from the stored results ([`paper/table2.json`](paper/table2.json)). The repository’s own evaluation steps use other random draws for their intervals, which can differ in the second decimal.
+These figures, their differences and the 90% intervals are those of the companion paper (its Table 4); [`paper/table2.py`](paper/table2.py) computes them from the stored results ([`paper/table2.json`](paper/table2.json)). The repository’s own evaluation steps use other random draws for their intervals, which can differ in the second decimal.
 
 Compare models within each test; the tests use different sales, dates, models and evaluation rules. The sale-prediction test compares values with the prices actually paid. The 1 January tests compare both models’ values before rounding with sale prices adjusted to 1 January. Chicago and the suburbs are parts of the county row, not further tests. The 1 January tests use the published hedonic model; the sale-prediction test uses its sale-prediction version. Every test covers single-family houses, town and row houses and two- to six-flat buildings (Assessor classes 202–212, 234, 278 and 295), not condominiums. Each value of the hedonic model is the posterior median of its fitted price, without simulated sale-price error. The sale-prediction test’s sales had been used to evaluate earlier versions of the hedonic model, and the 1 January sales to choose its structure (see “How much to trust it” and “Limitations”).
 
@@ -138,6 +138,12 @@ As delivered, the hedonic model’s values are somewhat more accurate than our r
 Once each model’s overall level is corrected in advance, there is no clear difference in typical error. The correction divides each model’s values by its own median ratio on the previous October–December sales, using no prices after 1 January. The hedonic model’s MdAPE minus the rebuild’s is then +0.20 points in 2023 (90% interval −0.05 to +0.42) and +0.09 in 2022 (−0.10 to +0.29). Its advantage as delivered therefore comes from its overall level. For two- to six-flat buildings its typical error is higher than the rebuild’s ([details](#1-january-tests-multi-family-homes-and-township-differences)).
 
 The areas are the parts of the county the Assessor revalued in each year: 17 townships of the southern and western suburbs in 2023 (11,356 evaluation sales during 2023) and 13 of the northern suburbs in 2022 (10,825 during 2022). Chicago cannot be tested this way because the Assessor’s model inputs for its reassessment years (2021 and 2024) are not public; the sale-prediction test covers it.
+
+### How uncertain each value is: the companion paper’s extension
+
+Unlike the Assessor’s model, which gives a single value, the hedonic model gives a predictive distribution for each sale price. The companion paper (its Section 4.4, Table 5 and Appendix A) checks these distributions on the sale-prediction test. Across the 32,369 house sales, the central 80% predictive intervals of the sale-prediction model contain 79.1% of sale prices, but unevenly: 68.7% in the lowest-priced fifth of each township’s sales (ranked by the model’s value) and 84.5% in the highest-priced. The model has one error scale per township, while the prices of lower-priced homes scatter more widely around their values. The paper therefore introduces a heteroskedastic hedonic model, in which the scale of the error depends on where the home’s neighbourhood lies in its township’s price range (three price tiers, blended smoothly). It raises the share in the lowest-priced fifth to 76.8% (highest-priced fifth 81.7%), with point accuracy almost unchanged; the values, and so the regressivity reported above, barely move.
+
+These interval results and the heteroskedastic model were computed outside this repository, from its sale-prediction fits and a modified Stan file; that code is not included in this release. The `pred_q05` and `pred_q95` columns of this repository’s prediction files are quantiles of the fitted value only, without the sale-level error, so they are not predictive intervals for a sale price.
 
 ## Details for expert readers
 
@@ -370,9 +376,10 @@ Exact reproduction is not guaranteed. Open-data queries are live and their conte
 ## References
 
 - Sijp, W. P. and Francke, M. K. (2026). Graph-Laplacian modeling of spatiotemporal effects for house price estimation. *Real Estate Economics* (volume and pages not yet assigned). <https://doi.org/10.1111/1540-6229.70062>
+- Sijp, W. P. (2026). Must Accurate Automated Home Valuations Be Hard to Explain? Evidence from Cook County. SSRN working paper. <https://doi.org/10.2139/ssrn.7684524>
 - Sijp, W. (2026). Scale and Local Information in Housing Markets: A Graph-Laplacian AVM Benchmarked Against Machine Learning. SSRN working paper. <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7345003>
 - International Association of Assessing Officers (2013). *Standard on Ratio Studies*. Kansas City, MO: IAAO.
 
 ## How to cite
 
-For the model, cite Sijp and Francke (2026). For this code and its results, cite this repository: Sijp, W. P. (2026), *gl-avm-cook*, Zenodo, [doi:10.5281/zenodo.23719978](https://doi.org/10.5281/zenodo.23719978) (this DOI always points to the latest version). [`CITATION.cff`](CITATION.cff) describes both the paper and the repository; GitHub’s “Cite this repository” button shows the paper as the preferred citation.
+For the model, cite Sijp and Francke (2026). For the comparison with the Assessor’s model and the heteroskedastic extension, cite the companion paper, Sijp (2026), *Must Accurate Automated Home Valuations Be Hard to Explain? Evidence from Cook County*, SSRN, [doi:10.2139/ssrn.7684524](https://doi.org/10.2139/ssrn.7684524). For this code and its results, cite this repository: Sijp, W. P. (2026), *gl-avm-cook*, Zenodo, [doi:10.5281/zenodo.23719978](https://doi.org/10.5281/zenodo.23719978) (this DOI always points to the latest version). [`CITATION.cff`](CITATION.cff) describes the repository and both papers; GitHub’s “Cite this repository” button shows Sijp and Francke (2026) as the preferred citation.

@@ -1,0 +1,35 @@
+{
+ "1 January 2023": {
+  "n": 11356,
+  "price_p25": 180000.0,
+  "price_median": 263000.0,
+  "price_p75": 357904.25,
+  "bldg_sf": 1329.0,
+  "land_sf": 6786.0,
+  "age": 65.0,
+  "share_flats": 0.0635787249031349,
+  "missing_chars": 0
+ },
+ "1 January 2022": {
+  "n": 10825,
+  "price_p25": 310000.0,
+  "price_median": 395000.0,
+  "price_p75": 550000.0,
+  "bldg_sf": 1613.0,
+  "land_sf": 7906.0,
+  "age": 59.0,
+  "share_flats": 0.035935334872979216,
+  "missing_chars": 0
+ },
+ "County test": {
+  "n": 38177,
+  "price_p25": 240000.0,
+  "price_median": 347000.0,
+  "price_p75": 505000.0,
+  "bldg_sf": 1480.0,
+  "land_sf": 5043.0,
+  "age": 69.0,
+  "share_flats": 0.1521334835110145,
+  "missing_chars": 0
+ }
+}

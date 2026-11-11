@@ -4,7 +4,8 @@ Panel A: 1 January assessment tests (2023 south and west suburbs; 2022 north sub
 against the Assessor's model before rounding (pred_pin_final_fmv), sale prices time-adjusted to 1 January.
 Panel B: county sale-prediction test (all; Chicago; suburbs), the hedonic model against the Assessor's unrounded
 predictions.
-Measures per model: MdAPE (%), median ratio, COD, VEI. Differences, hedonic minus Assessor, with paired 90%
+Measures per model: MdAPE (%), median ratio, COD, VEI, and the root mean squared log ratio (rmse, in per cent;
+quoted in the text, not in the table). Differences, hedonic minus Assessor, with paired 90%
 bootstrap intervals (2,000 draws, seed 1; within each township, whole clusters are drawn with replacement: the
 valuation group in the 1 January tests, the property in the county test; the same draw for both models): MdAPE,
 VEI, and MdAPE after level removal (each model's values divided by its own median ratio on the same sales; an
@@ -36,7 +37,8 @@ def measures(v, p):
     r = v / p
     m = np.median(r)
     return dict(mdape=100 * np.median(np.abs(r - 1)), median_ratio=m, cod=100 * np.mean(np.abs(r - m)) / m,
-                vei=vei(v, p)["vei"], lf_mdape=100 * np.median(np.abs(r / m - 1)))
+                vei=vei(v, p)["vei"], lf_mdape=100 * np.median(np.abs(r / m - 1)),
+                rmse=100 * np.sqrt(np.mean(np.log(r) ** 2)))
 
 
 def draws(df, strata, cluster, rng):
@@ -49,7 +51,7 @@ def run(df, gl, ass, price, strata, cluster):
     df = df.reset_index(drop=True)
     g, a, p = (df[c].to_numpy(float) for c in (gl, ass, price))
     mg, ma = measures(g, p), measures(a, p)
-    diffs = {k: [] for k in ("mdape", "vei", "lf_mdape")}
+    diffs = {k: [] for k in ("mdape", "vei", "lf_mdape", "rmse")}
     for i in draws(df, strata, cluster, np.random.default_rng(1)):
         bg, ba = measures(g[i], p[i]), measures(a[i], p[i])
         for k in diffs:

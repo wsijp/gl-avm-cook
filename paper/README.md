@@ -1,15 +1,17 @@
 # Scripts for the paper's tables
 
-These scripts compute the numbers in the paper's headline table and its regressivity results ("An open Bayesian spatio-temporal hedonic model against a county assessor's production model: evidence from Cook County"). They read stored outputs only: the evaluation sales, the hedonic model's values and predictions, and the Assessor's model's values and predictions, all written by the repository's own steps (`public/reproduce.sh all` and `public/reproduce.sh county final`). They fit nothing and change nothing outside this folder.
+These scripts compute the numbers in the companion paper's headline table, its table of the evaluation sales, its regressivity results and its figure of ratios by price group: Sijp, W. P. (2026), "Must Accurate Automated Home Valuations Be Hard to Explain? Evidence from Cook County", SSRN, [doi:10.2139/ssrn.7684524](https://doi.org/10.2139/ssrn.7684524). Table and figure numbers below are those of that version. They read stored outputs only: the evaluation sales, the hedonic model's values and predictions, and the Assessor's model's values and predictions (and, for Table 2, the home characteristics in the Assessor's downloaded input files), all written by the repository's own steps (`public/reproduce.sh all` and `public/reproduce.sh county final`). They fit nothing and change nothing outside this folder.
 
 | Script | What it makes | Output |
 |---|---|---|
-| `table2.py` | Table 2: accuracy, level, uniformity and regressivity for both models in each test, and the differences between them with 90% intervals | `table2.json`, `table2.md` |
-| `make_table2_tex.py` | Table 2 in LaTeX, from `table2.json` | `table2.tex` |
+| `table2.py` | Table 4, the headline results: accuracy, level, uniformity and regressivity for both models in each test, and the differences between them with 90% intervals; also the root mean squared log ratio quoted in the text (`rmse`) | `table2.json`, `table2.md` |
+| `make_table2_tex.py` | Table 4 in LaTeX, from `table2.json` | `table2.tex` |
+| `table_data.py` | Table 2, the evaluation sales: sale prices, building and land area, age and the share of flat buildings in each test | `table_data.json`, `table_data.tex` |
+| `figure_deciles.py` | Figure 2: the median ratio of each tenth of the evaluation sales, from lowest- to highest-priced, for both models | `figure_deciles.json`, `ratio_by_decile.pdf` |
 | `vei_cook.py` | The VEI of each model with its significance, and the PRD, quoted in the text | `vei_results.json` |
 | `vei.py` | The VEI calculation, used by the other scripts; `--selftest` reproduces the worked example of the IAAO draft standard | — |
 
-The stored outputs in this folder are the ones quoted in the paper.
+The stored outputs in this folder are the ones quoted in the paper. The scripts and their file names date from a draft in which the headline table was Table 2. The paper's other results, the predictive intervals and the heteroskedastic hedonic model of its Section 4.4 and Table 5, were computed outside this repository (see the main README).
 
 ## How to run
 
@@ -20,6 +22,8 @@ From the working folder that holds this repository as `public/` (see the main RE
 .venv/bin/python -I public/paper/table2.py           # about a minute; 2,000 bootstrap draws
 .venv/bin/python -I public/paper/vei_cook.py         # seconds
 .venv/bin/python -I public/paper/make_table2_tex.py
+.venv/bin/python -I public/paper/table_data.py         # seconds; also reads the Assessor's downloaded input files
+.venv/bin/python -I public/paper/figure_deciles.py     # seconds
 ```
 
 `table2.py` first checks that its MdAPE, median ratio and COD equal the values stored by the repository's evaluation steps, and stops if they do not. The bootstrap uses a fixed seed, so a rerun gives the same intervals.

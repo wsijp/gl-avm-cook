@@ -18,7 +18,9 @@ def num(x, f):
 
 
 def pt(d, f="{:+.2f}"):
-    return num(d['point'], f)
+    v = num(d['point'], f)
+    clear = d['lo'] > 0 or d['hi'] < 0  # 90% interval excludes zero
+    return f"\\textbf{{\\boldmath{v}}}" if clear else v
 
 
 def iv(d, f="{:+.2f}"):
@@ -49,14 +51,17 @@ def main():
 \toprule
  & & & & & & & \multicolumn{3}{c}{Difference, hedonic minus Assessor} \\
 \cmidrule(l){8-10}
-Test & Sales & Model & \makecell[r]{MdAPE\\(\%)} & \makecell[r]{Median\\ratio} & COD & VEI & MdAPE & \makecell{MdAPE,\\level removed} & VEI \\
+Test & Sales & Model & \makecell[r]{MdAPE\\(\%)} & \makecell[r]{Median\\ratio} & COD & \makecell[r]{VEI\\(\%)} & MdAPE & \makecell{MdAPE,\\level removed} & VEI \\
 \midrule
 """ + body + r"""
 \bottomrule
 \end{tabular}
 \par\smallskip\footnotesize\raggedright MdAPE: median absolute percentage error. Median ratio: median of value / price.
 COD: coefficient of dispersion. VEI: vertical equity indicator (IAAO 2026 draft); negative means regressive,
-acceptable range $-10$ to $+10$. Level removed: each model divided by its own median ratio on the same sales
+zero means neither regressive nor progressive, and the acceptable range is $-10\%$ to $+10\%$. Lower MdAPE and COD, a
+median ratio closer to 1 and a VEI closer to 0 are better. A negative MdAPE difference, or (as every VEI here is
+negative) a positive VEI difference, favours the hedonic model; differences in bold have a 90\% interval that excludes
+zero. Differences in MdAPE and VEI are in percentage points. Level removed: each model divided by its own median ratio on the same sales
 (retrospective). Values before rounding; 1 January sale prices adjusted to 1 January. Differences are computed from unrounded figures, so they may differ in the last digit from the rounded values shown.
 \end{table}
 """)

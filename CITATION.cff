@@ -1,7 +1,9 @@
 cff-version: 1.2.0
 message: >-
   If you use this code, please cite the repository. For the model itself, please cite
-  Sijp and Francke (2026), Real Estate Economics (the preferred citation below).
+  Sijp and Francke (2026), Real Estate Economics (the preferred citation below). For the
+  comparison with the Cook County Assessor's model, cite Sijp (2026), "Must Accurate
+  Automated Home Valuations Be Hard to Explain? Evidence from Cook County", SSRN.
 title: "gl-avm-cook: valuing Cook County homes with a spatio-temporal hedonic model, compared with the Assessor's own model"
 doi: "10.5281/zenodo.23719978"
 repository-code: "https://github.com/wsijp/gl-avm-cook"
@@ -14,6 +16,18 @@ license: MIT
 version: "1.0"
 date-released: "2026-10-20"
 references:
+  - type: report
+    title: "Must Accurate Automated Home Valuations Be Hard to Explain? Evidence from Cook County"
+    authors:
+      - family-names: Sijp
+        given-names: Willem P.
+        orcid: "https://orcid.org/0000-0002-5971-3860"
+    institution:
+      name: SSRN
+    year: 2026
+    month: 11
+    doi: 10.2139/ssrn.7684524
+    url: "https://ssrn.com/abstract=7684524"
   - type: report
     title: "Scale and Local Information in Housing Markets: A Graph-Laplacian AVM Benchmarked Against Machine Learning"
     authors:

@@ -241,6 +241,8 @@ All under `public/runs/v2/`:
 | Map boundary check (correlations 0.79 and 0.64) | none | no: script not included |
 | Sale-history check (704 homes, +0.65%) | none | no: scripts not included |
 | Number-of-flats variant | none | no: scripts not included |
+| VEI figures; the companion paper's results table (its Table 4, with the root mean squared log ratio quoted in its text), its table of the evaluation sales (Table 2) and its figure of ratios by price group (Figure 2) | the scripts in `paper/`, after `all`, `county` and `final` (`paper/README.md`) | yes |
+| The companion paper's predictive intervals and heteroskedastic hedonic model (its Section 4.4, Table 5, Figure 5 and Appendix A) | none | no: computed outside this repository |
 
 "Covered" means that the commands that produced the result are here; it is not a promise of identical numbers (see
 "Live downloads" and "What to expect").
